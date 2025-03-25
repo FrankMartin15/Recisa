@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # Servicio PHP con Apache para Laravel
+  php:
+    container_name: recisa
+    build:
+      context: .
+    volumes:
+      - .:/var/www/html  # Monta el código fuente en el contenedor
+    ports:
+      - "8084:80"  # Cambiado para evitar conflicto con otros proyectos
+    depends_on:
+      - mysql
+    environment:
+      COMPOSER_ALLOW_SUPERUSER: 1
+      MYSQL_HOST: mysql  # Asegurarse de que coincida con el DB_HOST en .env
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    working_dir: /var/www/html
+
+    # Si tienes Composer instalado en la imagen, puedes instalar las dependencias al levantar el contenedor
+    command: /bin/bash -c "composer install && php artisan key:generate && apachectl -D FOREGROUND"
+
+  # Servicio MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ${DB_DATABASE}  # Usar el nombre de la base de datos definido en .env
+      MYSQL_USER: frank
+      MYSQL_PASSWORD: admin
+    ports:
+      - "3307:3306"  # Cambiado para evitar conflicto con otros proyectos
+    volumes:
+      - mysql_data:/var/lib/mysql  # Volume para almacenar los datos de MySQL
+      - ./initdb:/docker-entrypoint-initdb.d  # Directorio con scripts SQL si es necesario
+
+  # Servicio phpMyAdmin
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:5.2.1
+    container_name: phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: mysql_db  # Nombre del contenedor MySQL
+      PMA_USER: root
+      PMA_PASSWORD: root
+    ports:
+      - "8083:80"  # Cambiado para evitar conflicto con otros proyectos
+    depends_on:
+      - mysql
+
+# Volúmenes para persistir los datos de MySQL
+volumes:
+  mysql_data:

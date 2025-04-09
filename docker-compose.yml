@@ -26,7 +26,7 @@ services:
   # Servicio MySQL
   mysql:
     image: mysql:8.0
-    container_name: mysql_db
+    container_name: mysql_db_r
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -42,10 +42,10 @@ services:
   # Servicio phpMyAdmin
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:5.2.1
-    container_name: phpmyadmin
+    container_name: phpmyadmin_r
     restart: always
     environment:
-      PMA_HOST: mysql_db  # Nombre del contenedor MySQL
+      PMA_HOST: mysql_db_r  # Nombre del contenedor MySQL
       PMA_USER: root
       PMA_PASSWORD: root
     ports:

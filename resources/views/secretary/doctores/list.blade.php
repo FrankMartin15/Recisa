@@ -2,9 +2,9 @@
 @section('title', 'Doctores')
 @push('css')
     <!--Alertas-->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('assets/js/sweetalert2@11.js') }}"></script>
     <!--CSS TABLA-->
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.3/css/dataTables.bootstrap5.css">
+    <link rel="stylesheet" href="{{ asset('assets/css/dataTables.bootstrap5.css') }}">
 @endpush
 @section('content')
     <div class="d-sm-flex align-items-center mb-4" style="justify-content: right;">

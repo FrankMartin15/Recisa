@@ -2,7 +2,7 @@
 @section('title','Roles')
     @push('css')
         <!--Alertas-->
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script src="{{ asset('assets/js/sweetalert2@11.js') }}"></script>
     @endpush
     @section('content')
         @if (session('success'))

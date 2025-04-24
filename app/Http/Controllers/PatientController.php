@@ -23,26 +23,29 @@ class PatientController extends Controller
 
     public function add()
     {
-        return view('patients.created');
+        // Obtener el estado de conexión desde la sesión
+        $isOnline = session('connection_status', true); // Si no existe, el valor predeterminado será 'true'
+
+        return view('patients.created', compact('isOnline'));
     }
 
     public function insert(StorePatient $request)
     {
-        try{
+        try {
             DB::beginTransaction();
-                $patient=new Patient();
-                
-                $patient->fill([
-                    'dni'=>$request->dni,
-                    'names'=>$request->names,
-                    'surnames'=>$request->surnames,
-                    'phone'=>$request->phone,
-                    'date'=>$request->date,
-                    'history_number'=>$request->history_number
-               ]);
-                $patient->save();
+            $patient = new Patient();
+
+            $patient->fill([
+                'dni' => $request->dni,
+                'names' => $request->names,
+                'surnames' => $request->surnames,
+                'phone' => $request->phone,
+                'date' => $request->date,
+                'history_number' => $request->history_number
+            ]);
+            $patient->save();
             DB::commit();
-        }catch (Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
         }
 
@@ -55,7 +58,7 @@ class PatientController extends Controller
         $patient = Patient::all()->firstWhere(function ($patient) use ($slug) {
             return $patient->slug === $slug;
         });
-        if(empty($patient)){
+        if (empty($patient)) {
             return view('page.404');
         }
         return view('patients.edit', compact('patient'));
@@ -83,12 +86,14 @@ class PatientController extends Controller
         return redirect('recisa/patients/list')->with('success', 'El paciente ' . $patient->names . ' fue actualizado');
     }
 
-    public function delete($id){
-        $patient=Patient::find($id);
+    public function delete($id)
+    {
+        $patient = Patient::find($id);
         $patient->delete();
-        return redirect('recisa/patients/list')->with('success','El paciente '.$patient->names.' fue eliminado'); 
+        return redirect('recisa/patients/list')->with('success', 'El paciente ' . $patient->names . ' fue eliminado');
     }
-    public function reporte(){
+    public function reporte()
+    {
         // Obtener todos los usuarios
         $patients = Patient::all(); // O personaliza la consulta si es necesario
         // Cargar la vista y pasar los datos de los usuarios
@@ -99,14 +104,15 @@ class PatientController extends Controller
         $mpdf = new Mpdf();
         // Configurar el pie de página centrado
         $footerHtml = '<footer>Página {PAGENO} de {nbpg}</footer>';
-        $mpdf->SetHTMLFooter($footerHtml);      
+        $mpdf->SetHTMLFooter($footerHtml);
         // Escribir el contenido HTML en el PDF
         $mpdf->WriteHTML($html);
         // Devolver el PDF como respuesta
         return response($mpdf->Output('reporte_pacientes.pdf', 'I')) // 'I' para Inline, 'D' para Descargar
-            ->header('Content-Type', 'application/pdf');  
+            ->header('Content-Type', 'application/pdf');
     }
-    public function report_patient($dni){
+    public function report_patient($dni)
+    {
         // Obtener todos los usuarios
         $patient = Patient::where('dni', $dni)->firstOrFail();
         // Cargar la vista y pasar los datos de los usuarios
@@ -117,11 +123,11 @@ class PatientController extends Controller
         $mpdf = new Mpdf();
         // Configurar el pie de página centrado
         $footerHtml = '<footer>Página {PAGENO} de {nbpg}</footer>';
-        $mpdf->SetHTMLFooter($footerHtml);      
+        $mpdf->SetHTMLFooter($footerHtml);
         // Escribir el contenido HTML en el PDF
         $mpdf->WriteHTML($html);
         // Devolver el PDF como respuesta
         return response($mpdf->Output('reporte_pacientes.pdf', 'I')) // 'I' para Inline, 'D' para Descargar
-            ->header('Content-Type', 'application/pdf');  
-    }    
+            ->header('Content-Type', 'application/pdf');
+    }
 }

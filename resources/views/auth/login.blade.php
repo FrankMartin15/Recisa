@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>RECISA| Login</title>
     <link rel="stylesheet" href="{{asset('assets/bootstrap/css/bootstrap.min.css')}}">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i&amp;display=swap">
     <link rel="stylesheet" href="{{asset('assets/fonts/fontawesome-all.min.css')}}">
+    <link rel="stylesheet" href="{{asset('assets/css/google-fonts-nunito.css')}}">
     <link rel="stylesheet" href="{{asset('assets/css/Footer-Basic-icons.css')}}">
     <link rel="icon" href="{{asset('assets/img/escudo.png') }}">
 </head>
@@ -20,19 +22,20 @@
                     <div class="card-body p-0">
                         <div class="row">
                             <div class="col-lg-6 d-none d-lg-flex">
-                                <div class="flex-grow-1 bg-login-image" style="background-image: url('{{ asset("assets/img/dogs/Red de Salud.png") }}');"></div>                            </div>
+                                <div class="flex-grow-1 bg-login-image" style="background-image: url('{{ asset("assets/img/dogs/Red de Salud.png") }}');"></div>
+                            </div>
                             <div class="col-lg-6">
                                 <div class="p-5">
                                     <div class="text-center">
                                         <h3 class="text-dark mb-4" style="font-weight: bold;">INICIO DE SESIÓN</h3>
                                         @if ($errors->any())
-                                            @foreach ($errors->all() as $item)
-                                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                                    <i class="fa-solid fa-circle-exclamation"></i> {{$item}}
-                                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                                </div>
-                                            @endforeach
-                                        @endif 
+                                        @foreach ($errors->all() as $item)
+                                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                            <i class="fa-solid fa-circle-exclamation"></i> {{$item}}
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                        </div>
+                                        @endforeach
+                                        @endif
                                     </div>
                                     <form method="post" action="{{url('login')}}" class="user">
                                         @csrf
@@ -57,10 +60,50 @@
     </div>
     <script src="{{asset('assets/bootstrap/js/bootstrap.min.js')}}"></script>
     <script src="{{asset('assets/js/theme.js')}}"></script>
-    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+    <script src="{{asset('assets/js/jquery-3.7.1.js')}}"></script>
     <script>
-        $('#dni').on('input', function () {
+        $('#dni').on('input', function() {
             this.value = this.value.replace(/\D/g, '');
+        });
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(function(registration) {
+                    console.log('Service Worker registrado con éxito:', registration.scope);
+                })
+                .catch(function(error) {
+                    console.log('Error al registrar el Service Worker:', error);
+                });
+        }
+    </script>
+    <script>
+        window.addEventListener('online', () => {
+            console.log('Conexión restaurada. Solicitando nuevo token CSRF...');
+            fetch('/csrf-token')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error al obtener el token CSRF');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Actualizar el meta tag del token CSRF
+                    const csrfMetaTag = document.querySelector('meta[name="csrf-token"]');
+                    if (csrfMetaTag) {
+                        csrfMetaTag.setAttribute('content', data.token);
+                    }
+
+                    // Actualizar el input hidden del token CSRF en los formularios
+                    document.querySelectorAll('input[name="_token"]').forEach(input => {
+                        input.value = data.token;
+                    });
+
+                    console.log('Token CSRF actualizado:', data.token);
+                })
+                .catch(error => {
+                    console.error('Error al actualizar el token CSRF:', error);
+                });
         });
     </script>
 </body>

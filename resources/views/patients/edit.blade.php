@@ -2,7 +2,7 @@
 @section('title','Editar Paciente')
     @push('css')
         <!-- Latest compiled and minified CSS -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
+<link rel="stylesheet" href="{{ asset('assets/css/bootstrap-select.min.css') }}">
         <!--JQuery-->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>             
     @endpush
@@ -73,7 +73,7 @@
         </div> 
     @endsection
     @push('js')
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
+                <script src="{{ asset('assets/js/bootstrap-select.min.js') }}"></script>
         <script>
             $('#phone,#age').on('input', function () {
                 this.value = this.value.replace(/\D/g, '');

@@ -2,8 +2,9 @@
 @section('title', 'Atención')
 @push('css')
     <!--Alertas-->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
+    <script src="{{ asset('assets/js/sweetalert2@11.js') }}"></script>
+        
+    <script src="{{ asset('assets/js/bootstrap-select.min.js') }}"></script>
 @endpush
 @section('content')
     <div class="row mt-3">
@@ -190,7 +191,7 @@
 @endsection
 @push('js')
     <!-- Latest compiled and minified JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
+    <script src="{{ asset('assets/js/bootstrap-select.min.js') }}"></script>
     <script>
         function toggleTextarea() {
             var selectElement = document.getElementById('status');

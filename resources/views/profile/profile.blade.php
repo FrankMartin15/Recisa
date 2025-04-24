@@ -2,7 +2,7 @@
 @section('title', 'Perfil')
 @push('css')
     <!--Alertas-->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('assets/js/sweetalert2@11.js') }}"></script>
     <!--Anderson-->
     <style>
         /* Estilo para cuando el botón de radio no está seleccionado */

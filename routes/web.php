@@ -25,6 +25,16 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
+// Ruta para actualizar el estado de conexión
+Route::post('/update-connection-status', function (Illuminate\Http\Request $request) {
+    $status = $request->input('status', true); // Por defecto 'online' (true)
+    session(['connection_status' => $status]); // Guardar el estado en la sesión
+    return response()->json(['message' => 'Estado actualizado']);
+});
+
+Route::get('/csrf-token', function () {
+    return response()->json(['token' => csrf_token()]);
+});
 
 //La vista de log
 Route::get('/',[AuthController::class,'login']);

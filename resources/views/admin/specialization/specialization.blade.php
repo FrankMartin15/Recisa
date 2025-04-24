@@ -2,11 +2,11 @@
 @section('title', 'Especialidades')
 @push('css')
     <!--Alertas-->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('assets/js/sweetalert2@11.js') }}"></script>
     <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
+    <link rel="stylesheet" href="{{ asset('assets/css/bootstrap-select.min.css') }}">
     <!--CSS TABLA-->
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.3/css/dataTables.bootstrap5.css">
+    <link rel="stylesheet" href="{{ asset('assets/css/dataTables.bootstrap5.css') }}">
 @endpush
 @section('content')
     @if (session('success'))
@@ -179,7 +179,7 @@
 @endsection
 @push('js')
     <!-- Latest compiled and minified JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
+    <script src="{{ asset('assets/js/bootstrap-select.min.js') }}"></script>
     <script>
         $('#especialidades').DataTable({
             responsive: true,

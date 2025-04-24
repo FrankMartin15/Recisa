@@ -2,7 +2,7 @@
 @section('title','Pacientes')
     @push('css')
         <!--Alertas-->
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script src="{{ asset('assets/js/sweetalert2@11.js') }}"></script>
         <!--CSS TABLA-->
         <link rel="stylesheet" href="https://cdn.datatables.net/2.0.3/css/dataTables.bootstrap5.css">
    

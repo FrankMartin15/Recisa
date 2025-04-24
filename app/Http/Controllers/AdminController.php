@@ -21,12 +21,17 @@ class AdminController extends Controller
         //all recuperar todos nuestris registros
         $users=User::all();
         $quotas = UserSpecialization::with(['user', 'specialization'])->get();
+        // Depurar el valor de $isOnline
         return view('admin.admin.list',compact('users','quotas'));
     }
-    public function add(){
-        $rol=UserGroup::all();
-        return view('admin.admin.created',compact('rol'));
+    public function add()
+    {
+        // Obtener el estado de conexión desde la sesión
+        $isOnline = session('connection_status', true); // Si no existe, el valor predeterminado será 'true'
+        $rol = UserGroup::all();
+        return view('admin.admin.created', compact('rol', 'isOnline'));
     }
+
     public function insert(StoreUserRequest $request){
         try {
             DB::beginTransaction();

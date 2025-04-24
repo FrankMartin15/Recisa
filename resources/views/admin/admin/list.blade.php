@@ -2,9 +2,9 @@
 @section('title', 'Usuarios')
 @push('css')
     <!--Alertas-->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('assets/js/sweetalert2@11.js') }}"></script>
     <!--CSS TABLA-->
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.3/css/dataTables.bootstrap5.css">
+    <link rel="stylesheet" href="{{ asset('assets/css/dataTables.bootstrap5.css') }}">
 @endpush
 @section('content')
     @if (session('success'))
@@ -90,7 +90,7 @@
                     <div class="table-responsive table" id="dataTable-2" role="grid" aria-describedby="dataTable_info">
                         <table id="usuarios" class="table my-0">
                             <thead>
-                                <tr style="">
+                                <tr>
                                     <th style="width: 20px;text-align: center !important; font-weight:bold">Foto</th>
                                     <th style="width: 100px;text-align: center !important; font-weight:bold">DNI</th>
                                     <th style="width: 1000px;text-align: center !important; font-weight:bold">Usuario</th>

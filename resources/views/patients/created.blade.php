@@ -1,180 +1,225 @@
 @extends('layouts.app')
 @section('title', 'Crear Paciente')
 @push('css')
-    <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
-    <!--Alertas-->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Latest compiled and minified CSS -->
+<script src="{{ asset('assets/js/sweetalert2@11.js') }}"></script>
+<link rel="stylesheet" href="{{ asset('assets/css/bootstrap-select.min.css') }}">
 @endpush
 
 @section('content')
-    <div class="row" style="justify-content: center;">
-        <div class="col-md-8" style="margin-top: 20px;">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <p class="text-primary m-0 fw-bold">Formulario del Paciente</p>
-                </div>
-                <div class="card-body">
-                    <div class="col-md-12">
-                        @if ($errors->any())
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert"
-                                id="auto-close-alert">
-                                <i class="fa-solid fa-circle-exclamation"></i>
-                                {{ implode(' ', $errors->all()) }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                    aria-label="Close"></button>
-                                <script>
-                                    // Después de 2 segundos (2000 ms), cierra la alerta automáticamente
-                                    setTimeout(function() {
-                                        var alert = document.getElementById("auto-close-alert");
-                                        if (alert) {
-                                            var alertInstance = new bootstrap.Alert(alert);
-                                            alertInstance.close();
-                                        }
-                                    }, 3500); // 2000 milisegundos = 2 segundos
-                                </script>
-                            </div>
-                        @endif
+<div class="row" style="justify-content: center;">
+    <div class="col-md-8" style="margin-top: 20px;">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <p class="text-primary m-0 fw-bold">Formulario del Paciente</p>
+            </div>
+            <div class="card-body">
+                <div class="col-md-12">
+                    @if ($errors->any())
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert"
+                        id="auto-close-alert">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        {{ implode(' ', $errors->all()) }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"
+                            aria-label="Close"></button>
+                        <script>
+                            // Después de 2 segundos (2000 ms), cierra la alerta automáticamente
+                            setTimeout(function() {
+                                var alert = document.getElementById("auto-close-alert");
+                                if (alert) {
+                                    var alertInstance = new bootstrap.Alert(alert);
+                                    alertInstance.close();
+                                }
+                            }, 3500); // 2000 milisegundos = 2 segundos
+                        </script>
                     </div>
-                    <div class="col-md-12">
-                        <label for="documento" class="form-label">CONSULTA DE DNI:</label>
-                        <div class="input-group mb-3">
-                            <input type="text" maxlength="8" minlength="8" id="documento" class="form-control"
-                                placeholder="Ingrese el DNI" aria-label="Ingrese el DNI" aria-describedby="button-addon2"
-                                style="border-radius: 10px 0px 0px 10px !important">
-                            <button class="btn btn-primary btn-sm" type="button" id="buscar"
-                                style="background-color: #00476D !important; border:none  ;color: #ffff ">Buscar</button>
+                    @endif
+                </div>
+                <div class="col-md-12">
+                    <label for="documento" class="form-label">CONSULTA DE DNI:</label>
+                    <div class="input-group mb-3">
+                        <input type="text" maxlength="8" minlength="8" id="documento" class="form-control"
+                            placeholder="Ingrese el DNI" aria-label="Ingrese el DNI" aria-describedby="button-addon2"
+                            style="border-radius: 10px 0px 0px 10px !important">
+                        <button class="btn btn-primary btn-sm" type="button" id="buscar"
+                            style="background-color: #00476D !important; border:none  ;color: #ffff ">Buscar</button>
+                    </div>
+                </div>
+                <form action="" method="POST">
+                    @csrf
+                    <div class="row g-3">
+                        <div class="col-md-2">
+                            <label for="dni" class="form-label">DNI:</label>
+                            <input readonly class="form-control" type="text" name="dni" id="dni"
+                                value="{{ old('dni') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="names" class="form-label">Nombres:</label>
+                            <input readonly class="form-control" type="text" name="names" id="names"
+                                value="{{ old('names') }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="surnames" class="form-label">Apellido:</label>
+                            <input readonly class="form-control" type="text" name="surnames" id="surnames"
+                                value="{{ old('surnames') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="phone" class="form-label">Número Historial:</label>
+                            <input class="form-control" maxlength="10" minlength="10" type="text"
+                                name="history_number" id="history_number" value="{{ old('history_number') }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="phone" class="form-label">Celular:</label>
+                            <input class="form-control" maxlength="9" minlength="9" type="text" name="phone"
+                                id="phone" value="{{ old('phone') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date" class="form-label">Fecha Nacimiento</label>
+                            <input type="date" name="date" id="date" class="form-control"
+                                value="{{ old('date') }}">
+                        </div>
+                        <div class="col-md-12 text-center mt-3">
+                            <button class="btn btn-primary btn-sm" type="submit"
+                                style="background-color: #00476D !important;">
+                                Guardar
+                            </button>
                         </div>
                     </div>
-                    <form action="" method="POST">
-                        @csrf
-                        <div class="row g-3">
-                            <div class="col-md-2">
-                                <label for="dni" class="form-label">DNI:</label>
-                                <input readonly class="form-control" type="text" name="dni" id="dni"
-                                    value="{{ old('dni') }}">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="names" class="form-label">Nombres:</label>
-                                <input readonly class="form-control" type="text" name="names" id="names"
-                                    value="{{ old('names') }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="surnames" class="form-label">Apellido:</label>
-                                <input readonly class="form-control" type="text" name="surnames" id="surnames"
-                                    value="{{ old('surnames') }}">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="phone" class="form-label">Número Historial:</label>
-                                <input class="form-control" maxlength="10" minlength="10" type="text"
-                                    name="history_number" id="history_number" value="{{ old('history_number') }}">
-                            </div>
-                            <div class="col-md-2">
-                                <label for="phone" class="form-label">Celular:</label>
-                                <input class="form-control" maxlength="9" minlength="9" type="text" name="phone"
-                                    id="phone" value="{{ old('phone') }}">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="date" class="form-label">Fecha Nacimiento</label>
-                                <input type="date" name="date" id="date" class="form-control"
-                                    value="{{ old('date') }}">
-                            </div>
-                            <div class="col-md-12 text-center mt-3">
-                                <button class="btn btn-primary btn-sm" type="submit"
-                                    style="background-color: #00476D !important;">
-                                    Guardar
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-        <div class="row g-3" style="justify-content:center; text-align: center;">
-            <div class="col-md-2">
-                <a href="{{ url('recisa/clinicalhistories/created') }}">
-                    <img src="{{ asset('assets/img/avatars/historia-clinica.png') }}" alt=""
-                        style="height: 128px; box-shadow:8px 8px 20px #0000"><br>
-                    <span style="color:#00476D;">Historias Clínicas</span>
-                </a>
-            </div>
-            <div class="col-md-2">
-                <a href="{{ url('recisa/patients/list') }}">
-                    <img src="{{ asset('assets/img/avatars/lista.png') }}" alt=""
-                        style="height: 134px; box-shadow:8px 8px 20px #0000; margin-top:-8px"><br>
-                    <span style="color:#00476D;">Lista de Pacientes</span>
-                </a>
+                </form>
             </div>
         </div>
     </div>
+    <div class="row g-3" style="justify-content:center; text-align: center;">
+        <div class="col-md-2">
+            <a href="{{ url('recisa/clinicalhistories/created') }}">
+                <img src="{{ asset('assets/img/avatars/historia-clinica.png') }}" alt=""
+                    style="height: 128px; box-shadow:8px 8px 20px #0000"><br>
+                <span style="color:#00476D;">Historias Clínicas</span>
+            </a>
+        </div>
+        <div class="col-md-2">
+            <a href="{{ url('recisa/patients/list') }}">
+                <img src="{{ asset('assets/img/avatars/lista.png') }}" alt=""
+                    style="height: 134px; box-shadow:8px 8px 20px #0000; margin-top:-8px"><br>
+                <span style="color:#00476D;">Lista de Pacientes</span>
+            </a>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('js')
-    <!-- Latest compiled and minified JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
-    <script>
-        // Función para realizar la búsqueda
-        function buscarDNI() {
-            var dni = $('#documento').val();
-            // Validar longitud del DNI
-            if (dni.length !== 8) {
-                showModal('El DNI debe tener 8 dígitos');
-            }
-            if (!dni.trim()) {
-                showModal('Por favor, ingrese el DNI');
-            }
-
-            $.ajax({
-                url: '{{ url('/recisa/patients/add-consulta') }}', // Ruta para la consulta del DNI
-                type: 'POST',
-                data: {
-                    '_token': '{{ csrf_token() }}',
-                    'dni': dni
-                },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.numeroDocumento == dni) {
-                        var nombreCompleto = response.apellidoPaterno + ' ' + response.apellidoMaterno;
-                        $('#surnames').val(nombreCompleto);
-                        $('#names').val(response.nombres);
-                        $('#dni').val(response.numeroDocumento);
-                        $('#documento').val('');
-                    }
+<!-- Latest compiled and minified JavaScript -->
+<script src="{{ asset('assets/js/bootstrap-select.min.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const statusIndicator = document.getElementById('connection-status'); // Indicador visual de conexión
+        const dniField = document.getElementById('dni');
+        const namesField = document.getElementById('names');
+        const surnamesField = document.getElementById('surnames');
+        const documentoField = document.getElementById('documento');
+        const buscarButton = document.getElementById('buscar');
+    
+        async function updateConnectionStatus() {
+            try {
+                if (navigator.onLine) {
+                    // Verificar conexión con un recurso externo
+                    await fetch('https://www.google.com', { method: 'HEAD', mode: 'no-cors' });
+                    statusIndicator.style.backgroundColor = 'green';
+                    statusIndicator.title = 'Conectado a Internet';
+    
+                    // Habilitar campos de consulta
+                    dniField.readOnly = true;
+                    namesField.readOnly = true;
+                    surnamesField.readOnly = true;
+                    documentoField.disabled = false;
+                    buscarButton.disabled = false;
+                } else {
+                    throw new Error('Sin conexión');
                 }
-            });
+            } catch (error) {
+                // Manejar estado sin conexión
+                statusIndicator.style.backgroundColor = 'red';
+                statusIndicator.title = 'Sin conexión a Internet';
+    
+                // Deshabilitar campos de consulta
+                dniField.readOnly = false;
+                namesField.readOnly = false;
+                surnamesField.readOnly = false;
+                documentoField.disabled = true;
+                buscarButton.disabled = true;
+            }
+        }
+    
+        // Actualizar el estado de conexión al cargar la página
+        updateConnectionStatus();
+    
+        // Escuchar cambios en el estado de conexión
+        window.addEventListener('online', updateConnectionStatus);
+        window.addEventListener('offline', updateConnectionStatus);
+    });
+
+    // Función para realizar la búsqueda
+    function buscarDNI() {
+        var dni = $('#documento').val();
+        // Validar longitud del DNI
+        if (dni.length !== 8) {
+            showModal('El DNI debe tener 8 dígitos');
+        }
+        if (!dni.trim()) {
+            showModal('Por favor, ingrese el DNI');
         }
 
-        // Asociar evento click al botón #buscar
-        $('#buscar').click(buscarDNI);
-
-        // Asociar evento de teclado al campo #dni
-        $('#documento').keypress(function(event) {
-            // Verificar si la tecla presionada es Enter (código 13)
-            if (event.which == 13) {
-                buscarDNI(); // Llamar a la función de búsqueda
+        $.ajax({
+            url: '{{ url(' / recisa / patients / add - consulta ') }}', // Ruta para la consulta del DNI
+            type: 'POST',
+            data: {
+                '_token': '{{ csrf_token() }}',
+                'dni': dni
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.numeroDocumento == dni) {
+                    var nombreCompleto = response.apellidoPaterno + ' ' + response.apellidoMaterno;
+                    $('#surnames').val(nombreCompleto);
+                    $('#names').val(response.nombres);
+                    $('#dni').val(response.numeroDocumento);
+                    $('#documento').val('');
+                }
             }
         });
+    }
 
-        function showModal(message, icon = "error") {
-            const Toast = Swal.mixin({
-                toast: true,
-                position: "top-end",
-                showConfirmButton: false,
-                timer: 1500,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.onmouseenter = Swal.stopTimer;
-                    toast.onmouseleave = Swal.resumeTimer;
-                }
-            });
-            Toast.fire({
-                icon: icon,
-                title: message
-            });
+    // Asociar evento click al botón #buscar
+    $('#buscar').click(buscarDNI);
+
+    // Asociar evento de teclado al campo #dni
+    $('#documento').keypress(function(event) {
+        // Verificar si la tecla presionada es Enter (código 13)
+        if (event.which == 13) {
+            buscarDNI(); // Llamar a la función de búsqueda
         }
-        $('#documento,#dni,#phone,#history_number').on('input', function() {
-            this.value = this.value.replace(/\D/g, '');
+    });
+
+    function showModal(message, icon = "error") {
+        const Toast = Swal.mixin({
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 1500,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.onmouseenter = Swal.stopTimer;
+                toast.onmouseleave = Swal.resumeTimer;
+            }
         });
-    </script>
+        Toast.fire({
+            icon: icon,
+            title: message
+        });
+    }
+    $('#documento,#dni,#phone,#history_number').on('input', function() {
+        this.value = this.value.replace(/\D/g, '');
+    });
+</script>
 @endpush

@@ -1,22 +1,24 @@
 <nav class="navbar navbar-light navbar-expand bg-white shadow mb-4 topbar static-top">
     <div class="container-fluid">
-        <form class="d-none d-sm-inline-block me-auto ms-md-3 my-2 my-md-0 mw-100 navbar-search">
-            <div class="input-group">
-                <button class="btn btn-primary py-0" type="button" style="background: #135578 !important;height: 54px;">
-                    <svg style="width: 24px; height: 24px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
-                        <path fill="#ffffff" d="M128 0c17.7 0 32 14.3 32 32l0 32 128 0 0-32c0-17.7 14.3-32 32-32s32 14.3 32 32l0 32 48 0c26.5 0 48 21.5 48 48l0 48L0 160l0-48C0 85.5 21.5 64 48 64l48 0 0-32c0-17.7 14.3-32 32-32zM0 192l448 0 0 272c0 26.5-21.5 48-48 48L48 512c-26.5 0-48-21.5-48-48L0 192zm64 80l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0c-8.8 0-16 7.2-16 16zm128 0l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0c-8.8 0-16 7.2-16 16zm144-16c-8.8 0-16 7.2-16 16l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0zM64 400l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0c-8.8 0-16 7.2-16 16zm144-16c-8.8 0-16 7.2-16 16l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0zm112 16l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0c-8.8 0-16 7.2-16 16z" />
-                    </svg>
-                </button>
-                <label class="form-label input-group-text" style="height: 54px; width:187px" id="fecha_hora"></label>
-                <script>
-                    function updateTime() {
-                        var now = new Date();
-                        var formattedTime = now.getFullYear() + '-' + (now.getMonth() + 1).toString().padStart(2, '0') + '-' + now.getDate().toString().padStart(2, '0') + ' ' + now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0') + ':' + now.getSeconds().toString().padStart(2, '0');
-                        document.getElementById('fecha_hora').textContent = formattedTime;
-                    }
-                    setInterval(updateTime, 1000);
-                    updateTime();
-                </script>
+        <form class="d-none d-sm-inline-block me-auto ms-md-3 my-2 my-md-0 mw-100 navbar-search" style="position: relative;">
+            <div class="d-flex align-items-center">
+                <div class="input-group">
+                    <button class="btn btn-primary py-0" type="button" style="background: #135578 !important;height: 54px;">
+                        <svg style="width: 24px; height: 24px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                            <path fill="#ffffff" d="M128 0c17.7 0 32 14.3 32 32l0 32 128 0 0-32c0-17.7 14.3-32 32-32s32 14.3 32 32l0 32 48 0c26.5 0 48 21.5 48 48l0 48L0 160l0-48C0 85.5 21.5 64 48 64l48 0 0-32c0-17.7 14.3-32 32-32zM0 192l448 0 0 272c0 26.5-21.5 48-48 48L48 512c-26.5 0-48-21.5-48-48L0 192zm64 80l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0c-8.8 0-16 7.2-16 16zm128 0l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0c-8.8 0-16 7.2-16 16zm144-16c-8.8 0-16 7.2-16 16l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0zM64 400l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0c-8.8 0-16 7.2-16 16zm144-16c-8.8 0-16 7.2-16 16l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0zm112 16l0 32c0 8.8 7.2 16 16 16l32 0c8.8 0 16-7.2 16-16l0-32c0-8.8-7.2-16-16-16l-32 0c-8.8 0-16 7.2-16 16z" />
+                        </svg>
+                    </button>
+                    <label class="form-label input-group-text" style="height: 54px; width:187px" id="fecha_hora"></label>
+                    <script>
+                        function updateTime() {
+                            var now = new Date();
+                            var formattedTime = now.getFullYear() + '-' + (now.getMonth() + 1).toString().padStart(2, '0') + '-' + now.getDate().toString().padStart(2, '0') + ' ' + now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0') + ':' + now.getSeconds().toString().padStart(2, '0');
+                            document.getElementById('fecha_hora').textContent = formattedTime;
+                        }
+                        setInterval(updateTime, 1000);
+                        updateTime();
+                    </script>
+                </div>
             </div>
         </form>
         <ul class="navbar-nav flex-nowrap ms-auto">
@@ -74,6 +76,7 @@
                         @else
                         <img class="border rounded-circle img-profile" src="{{Storage::url('public/perfiles/'.Auth::user()->image)}}">
                         @endif
+                        <p id="connection-status" class="status-indicator"></p>
                     </a>
                     <div class="dropdown-menu shadow dropdown-menu-end animated--grow-in bg-gray">
                         <a class="dropdown-item" href="{{url('recisa/perfil')}}"><svg style="width: 24px; height: 24px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
@@ -93,3 +96,56 @@
         </ul>
     </div>
 </nav>
+<script>
+    async function updateConnectionStatus() {
+        const statusIndicator = document.getElementById('connection-status');
+        try {
+            if (navigator.onLine) {
+                await fetch('https://www.google.com', { method: 'HEAD', mode: 'no-cors' });
+                statusIndicator.style.backgroundColor = 'green';
+                statusIndicator.title = 'Conectado a Internet';
+
+                // Enviar estado al servidor
+                await fetch('/update-connection-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify({ status: true }),
+                });
+            } else {
+                throw new Error('Sin conexión');
+            }
+        } catch (error) {
+            statusIndicator.style.backgroundColor = 'red';
+            statusIndicator.title = 'Sin conexión a Internet';
+
+            // Enviar estado al servidor
+            await fetch('/update-connection-status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({ status: false }),
+            });
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        updateConnectionStatus();
+        window.addEventListener('online', updateConnectionStatus);
+        window.addEventListener('offline', updateConnectionStatus);
+        setInterval(updateConnectionStatus, 5000);
+    });
+</script>
+<style>
+    .status-indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-left: 5px;
+    }
+</style>

@@ -76,8 +76,8 @@
                         @else
                         <img class="border rounded-circle img-profile" src="{{Storage::url('public/perfiles/'.Auth::user()->image)}}">
                         @endif
-                        <p id="connection-status" class="status-indicator"></p>
                     </a>
+                    <p id="connection-status" class="status-indicator"></p>
                     <div class="dropdown-menu shadow dropdown-menu-end animated--grow-in bg-gray">
                         <a class="dropdown-item" href="{{url('recisa/perfil')}}"><svg style="width: 24px; height: 24px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
                                 <path fill="#c8c8c8" d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3C0 498.7 13.3 512 29.7 512l388.6 0c16.4 0 29.7-13.3 29.7-29.7C448 383.8 368.2 304 269.7 304l-91.4 0z" />
@@ -101,9 +101,13 @@
         const statusIndicator = document.getElementById('connection-status');
         try {
             if (navigator.onLine) {
-                await fetch('https://www.google.com', { method: 'HEAD', mode: 'no-cors' });
+                await fetch('https://www.google.com', {
+                    method: 'HEAD',
+                    mode: 'no-cors'
+                });
                 statusIndicator.style.backgroundColor = 'green';
                 statusIndicator.title = 'Conectado a Internet';
+                statusIndicator.textContent = 'Conectado';
 
                 // Enviar estado al servidor
                 await fetch('/update-connection-status', {
@@ -112,14 +116,17 @@
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                     },
-                    body: JSON.stringify({ status: true }),
+                    body: JSON.stringify({
+                        status: true
+                    }),
                 });
             } else {
                 throw new Error('Sin conexión');
             }
         } catch (error) {
-            statusIndicator.style.backgroundColor = 'red';
+            statusIndicator.style.backgroundColor = 'orange';
             statusIndicator.title = 'Sin conexión a Internet';
+            statusIndicator.textContent = 'Sin conexión';
 
             // Enviar estado al servidor
             await fetch('/update-connection-status', {
@@ -128,7 +135,9 @@
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 },
-                body: JSON.stringify({ status: false }),
+                body: JSON.stringify({
+                    status: false
+                }),
             });
         }
     }
@@ -142,10 +151,14 @@
 </script>
 <style>
     .status-indicator {
-        display: inline-block;
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        margin-left: 5px;
+        display: relative;
+        position: absolute;
+        width: 50%;
+        border-radius: 10%;
+        padding: 2px 6px;
+        margin-top: -20px;
+        font-size: 10px !important;
+        text-align: center !important;
+        color: #fff;
     }
 </style>

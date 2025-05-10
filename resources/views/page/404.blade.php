@@ -7,59 +7,53 @@
         <meta name="description" content="" />
         <meta name="author" content="" />
         <link rel="icon" href="{{ asset('assets/img/escudo.png') }}">
-        <title>404 Error-Sistema CIMEXA</title>
+        <title>404 Error - Sistema CIMEXA</title>
         <link href="{{asset('assets/css/template.css')}}" rel="stylesheet" />
         <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+        <style>
+            .card-custom {
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                border-radius: 10px;
+                padding: 30px;
+                background-color: #ffffff;
+            }
+            .text-shadow {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            }
+            .img-error {
+                max-width: 100%;
+                height: auto;
+            }
+        </style>
     </head>
     <body>
-        <div id="layoutError">
-            <div id="layoutError_content">
-                <main>
-                    <div class="container">
-                        <div class="row justify-content-center">
-                            <div class="col-lg-6">
-                                <div class="text-center mt-4">
-                                    <img class="mb-4 img-error" src="{{asset('assets/img/error-404-monochrome.svg')}}" />
-                                    <p class="lead">Esta URL solicitada no se encontró en este servidor.</p>
-                                    @if(Auth::check())
-                                        @switch(Auth::user()->user_level)
-                                            @case(1)
-                                                <a href="{{url('admin/dashboard')}}">
-                                                    <i class="fas fa-arrow-left me-1"></i>
-                                                    Volver al panel
-                                                </a>                                                
-                                                @break
-                                            @case(2)
-                                                <a href="{{url('secretary/dashboard')}}">
-                                                    <i class="fas fa-arrow-left me-1"></i>
-                                                    Volver al panel
-                                                </a>                                                
-                                                @break
-                                            @case(3)
-                                                <a href="{{url('doctor/dashboard')}}">
-                                                    <i class="fas fa-arrow-left me-1"></i>
-                                                    Volver al panel
-                                                </a>                                                
-                                                @break
-                                        @endswitch
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </main>
-            </div>
-            <div id="layoutError_footer">
-                <footer class="py-4 bg-light mt-auto">
-                    <div class="container-fluid px-4">
-                        <div class="d-flex align-items-center justify-content-between small">
-                            <div class="text-muted">Copyright © Todos los derechos reservados 2024</div>
-                        </div>
-                    </div>
-                </footer>
+        <div id="layoutError" class="d-flex align-items-center justify-content-center vh-100 bg-light">
+            <div class="card-custom text-center">
+                <img class="mb-4 img-error" src="{{asset('assets/img/error-404-monochrome.svg')}}" alt="404 Error" />
+                <h1 class="display-4 text-shadow">404</h1>
+                <p class="lead text-shadow">Esta URL solicitada no se encontró en este servidor.</p>
+                @if(Auth::check())
+                    @switch(Auth::user()->user_level)
+                        @case(1)
+                            <a href="{{url('admin/dashboard')}}" class="btn btn-primary mt-3">
+                                <i class="fas fa-arrow-left me-1"></i> Volver al panel
+                            </a>
+                            @break
+                        @case(2)
+                            <a href="{{url('secretary/dashboard')}}" class="btn btn-primary mt-3">
+                                <i class="fas fa-arrow-left me-1"></i> Volver al panel
+                            </a>
+                            @break
+                        @case(3)
+                            <a href="{{url('doctor/dashboard')}}" class="btn btn-primary mt-3">
+                                <i class="fas fa-arrow-left me-1"></i> Volver al panel
+                            </a>
+                            @break
+                    @endswitch
+                @endif
             </div>
         </div>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+        <script src="{{asset('assets/js/bootstrap.bundle.min.js')}}"></script>
         <script src="{{asset('assets/js/scripts.js')}}"></script>
     </body>
 </html>

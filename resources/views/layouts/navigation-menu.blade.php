@@ -20,7 +20,7 @@
                 <span>Perfil</span>
             </a>
         </li>
-        <li class="sidebar-item">
+        <li class="sidebar-item offline-hide">
             <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                 data-bs-target="#auth1" aria-expanded="false" aria-controls="auth1">
                 <svg style="width: 24px; height: 24px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
@@ -37,7 +37,7 @@
                 </li>
             </ul>
         </li>
-        <li class="sidebar-item">
+        <li class="sidebar-item offline-hide">
             <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                 data-bs-target="#auth2" aria-expanded="false" aria-controls="auth2">
                 <svg style="width: 24px; height: 24px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512">
@@ -54,7 +54,7 @@
                 </li>
             </ul>
         </li>
-        <li class="sidebar-item">
+        <li class="sidebar-item offline-hide">
             <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                 data-bs-target="#auth3" aria-expanded="false" aria-controls="auth3">
                 <svg style="width: 24px; height: 24px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512">
@@ -202,3 +202,60 @@
         </a>
     </div>
 </aside>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const statusIndicator = document.getElementById('connection-status'); // Indicador visual de conexión
+        const offlineElements = document.querySelectorAll('.offline-hide'); // Elementos que se ocultan en modo offline
+
+        async function updateConnectionStatus() {
+            try {
+                if (navigator.onLine) {
+                    // Verificar conexión con un recurso externo
+                    await fetch('https://www.google.com', { method: 'HEAD', mode: 'no-cors' });
+                    statusIndicator.style.backgroundColor = 'green';
+                    statusIndicator.title = 'Conectado a Internet';
+
+                    // Mostrar elementos
+                    offlineElements.forEach(el => el.style.display = 'block');
+
+                    // Enviar estado al servidor
+                    await fetch('/update-connection-status', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        },
+                        body: JSON.stringify({ status: true }),
+                    });
+                } else {
+                    throw new Error('Sin conexión');
+                }
+            } catch (error) {
+                // Manejar estado sin conexión
+                statusIndicator.style.backgroundColor = 'red';
+                statusIndicator.title = 'Sin conexión a Internet';
+
+                // Ocultar elementos
+                offlineElements.forEach(el => el.style.display = 'none');
+
+                // Enviar estado al servidor
+                await fetch('/update-connection-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify({ status: false }),
+                });
+            }
+        }
+
+        // Actualizar el estado de conexión al cargar la página
+        updateConnectionStatus();
+
+        // Escuchar cambios en el estado de conexión
+        window.addEventListener('online', updateConnectionStatus);
+        window.addEventListener('offline', updateConnectionStatus);
+    });
+</script>

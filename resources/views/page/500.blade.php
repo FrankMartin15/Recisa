@@ -9,38 +9,29 @@
         <title>500 Error - Servidor</title>
         <link href="{{asset('assets/css/template.css')}}" rel="stylesheet" />
         <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+        <style>
+            .card-custom {
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                border-radius: 10px;
+                padding: 30px;
+                background-color: #ffffff;
+            }
+            .text-shadow {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            }
+        </style>
     </head>
     <body>
-        <div id="layoutError">
-            <div id="layoutError_content">
-                <main>
-                    <div class="container">
-                        <div class="row justify-content-center">
-                            <div class="col-lg-6">
-                                <div class="text-center mt-4">
-                                    <h1 class="display-1">500</h1>
-                                    <p class="lead">Error interno del servidor.</p>
-                                    <a href="{{url('/')}}">
-                                        <i class="fas fa-arrow-left me-1"></i>
-                                        Regregar al Login
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </main>
-            </div>
-            <div id="layoutError_footer">
-                <footer class="py-4 bg-light mt-auto">
-                    <div class="container-fluid px-4">
-                        <div class="d-flex align-items-center justify-content-between small">
-                            <div class="text-muted">Copyright © Todos los derechos reservados 2024</div>
-                        </div>
-                    </div>
-                </footer>
+        <div id="layoutError" class="d-flex align-items-center justify-content-center vh-100 bg-light">
+            <div class="card-custom text-center">
+                <h1 class="display-1 text-shadow">500</h1>
+                <p class="lead text-shadow">Error interno del servidor.</p>
+                <a href="{{url('/')}}" class="btn btn-primary mt-3">
+                    <i class="fas fa-arrow-left me-1"></i> Regresar al Login
+                </a>
             </div>
         </div>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+        <script src="{{asset('assets/js/bootstrap.bundle.min.js')}}"></script>
         <script src="{{asset('assets/js/scripts.js')}}"></script>
     </body>
 </html>

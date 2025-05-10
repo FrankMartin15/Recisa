@@ -4,7 +4,7 @@
         <!--Alertas-->
         <script src="{{ asset('assets/js/sweetalert2@11.js') }}"></script>
         <!--CSS TABLA-->
-        <link rel="stylesheet" href="https://cdn.datatables.net/2.0.3/css/dataTables.bootstrap5.css">
+        <link href="{{asset('assets/css/dataTables.bootstrap5.css')}}" rel="stylesheet" />
    
     @endpush 
     @section('content')

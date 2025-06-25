@@ -2,7 +2,6 @@
 @section('title', 'Especialidades')
 @push('css')
     <!--Alertas-->
-    <script src="{{ asset('assets/js/sweetalert2@11.js') }}"></script>
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap-select.min.css') }}">
     <!--CSS TABLA-->
@@ -38,10 +37,12 @@
                 <div class="card-body">
                     <div class="col-md-12">
                         @if ($errors->any())
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert" id="auto-close-alert">
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert"
+                                id="auto-close-alert">
                                 <i class="fa-solid fa-circle-exclamation"></i>
                                 {{ implode(' ', $errors->all()) }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                    aria-label="Close"></button>
                             </div>
                             <script>
                                 // Después de 2 segundos (2000 ms), cierra la alerta automáticamente
@@ -71,8 +72,8 @@
                             <div class="col-md-5">
                                 <div class="input-group mb-3">
                                     <label class="input-group-text" for="quantity_voucher">#</label>
-                                    <select title="...." data-style="btn-secondary" data-size="3"
-                                        class="form-control selectpicker show-tick" id="quantity_voucher_insert"
+                                    <select title="...." data-style="btn-secondary"
+                                        class="form-select" id="quantity_voucher_insert"
                                         name="quantity_voucher_insert">
                                         <option value="1"
                                             {{ old('quantity_voucher_insert') == '1' ? 'selected' : '' }}>1</option>
@@ -88,7 +89,8 @@
                                 </div>
                             </div>
                             <div class="col-12 text-center">
-                                <button type="submit" class="btn btn-primary" style="background-color: #00476D !important;">Guardar</button>
+                                <button type="submit" class="btn btn-primary"
+                                    style="background-color: #00476D !important;">Guardar</button>
                             </div>
                         </div>
                     </form>
@@ -106,11 +108,11 @@
                         <table class="table my-0" id="especialidades">
                             <thead>
                                 <tr>
-                                    <th>#</th>
-                                    <th>Nombre</th>
-                                    <th>Cupos</th>
-                                    <th>Creado</th>
-                                    <th>Acciones</th>
+                                    <th style="font-weight:bold; text-align:center">#</th>
+                                    <th style="font-weight:bold; text-align:center">Nombre</th>
+                                    <th style="font-weight:bold; text-align:center">Cupos</th>
+                                    <th style="font-weight:bold; text-align:center">Creado</th>
+                                    <th style="font-weight:bold; text-align:center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -119,24 +121,32 @@
                                 @endphp
                                 @foreach ($specializations as $index => $value)
                                     <tr data-id="{{ $value->id }}">
-                                        <td>{{ $index + 1 }}</td>
-                                        <td>{{ $value->name }}</td>
-                                        <td>
-                                            <form action="{{ url('admin/specialization/edit/' . $value->id) }}" method="post">
+                                        <td style="text-align:center">{{ $index + 1 }}</td>
+                                        <td style="text-align:center">{{ $value->name }}</td>
+                                        <td style="text-align:center">
+                                            <form action="{{ url('admin/specialization/edit/' . $value->id) }}"
+                                                method="post">
                                                 @csrf
-                                                <input type="hidden" name="specialization_id" value="{{ $value->id }}">
-                                                <input type="text" class="form-control quantity_voucher_update_input" style="width: 50px;" maxlength="2"
-                                                    id="quantity_voucher_update" name="quantity_voucher_update" aria-describedby="basic-addon3 basic-addon4"
+                                                <input type="hidden" name="specialization_id" value="{{ $value->id }}"
+                                                    style="text-align:center">
+                                                <input type="text" class="form-control quantity_voucher_update_input"
+                                                    style="width: 50px; text-align:center; margin: 0 auto; display: block;"
+                                                    maxlength="2" id="quantity_voucher_update"
+                                                    name="quantity_voucher_update"
+                                                    aria-describedby="basic-addon3 basic-addon4"
                                                     value="{{ old('quantity_voucher_update', $value->quantity_voucher) }}">
                                             </form>
                                         </td>
-                                        <td>{{ date('d-m-Y', strtotime($value->created_at)) }}</td>
-                                        <td>
+                                        <td style="text-align:center">{{ date('d-m-Y', strtotime($value->created_at)) }}
+                                        </td>
+                                        <td style="text-align:center">
                                             <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-primary edit-btn" style="background: #7BDE7C;">
+                                                <button type="button" class="btn btn-primary edit-btn"
+                                                    style="background: #7BDE7C;">
                                                     <i class="fas fa-pencil-alt"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-danger" style="background: #EB5C5E;" data-bs-toggle="modal" data-bs-target="#delete-{{ $value->id }}">
+                                                <button type="button" class="btn btn-danger" style="background: #EB5C5E;"
+                                                    data-bs-toggle="modal" data-bs-target="#delete-{{ $value->id }}">
                                                     <i class="far fa-trash-alt"></i>
                                                 </button>
                                                 <!-- Modal Delete-->
@@ -152,7 +162,7 @@
                                                                     data-bs-dismiss="modal" aria-label="Close"></button>
                                                             </div>
                                                             <div class="modal-body">
-                                                                La especialización {{ $value->name }} será eliminadan.
+                                                                La especialización {{ $value->name }} será eliminada.
                                                             </div>
                                                             <div class="modal-footer">
                                                                 <button type="button" class="btn btn-secondary"
@@ -178,8 +188,8 @@
     </div>
 @endsection
 @push('js')
-    <!-- Latest compiled and minified JavaScript -->
-    <script src="{{ asset('assets/js/bootstrap-select.min.js') }}"></script>
+        <script src="{{ asset('assets/js/sweetalert2@11.js') }}"></script>
+        <script src="{{ asset('assets/js/bootstrap-select.min.js') }}" defer></script>
     <script>
         $('#especialidades').DataTable({
             responsive: true,
@@ -215,18 +225,19 @@
 
                 if (!input.val().trim()) {
                     showModal('Ingrese la cantidad para los cupos');
-                    return; 
+                    return;
                 }
-                
+
                 if (isNaN(input.val()) || input.val() < 1 || input.val() > 20) {
                     showModal('La especialidad debe tener mínimo 1 cupo o máximo 20');
                     return;
                 }
-              
-                form.attr('action', '{{ url("admin/specialization/edit/") }}/' + id);
+
+                form.attr('action', '{{ url('admin/specialization/edit/') }}/' + id);
                 form.submit();
             });
-        function showModal(message, icon = "error") {
+
+            function showModal(message, icon = "error") {
                 const Toast = Swal.mixin({
                     toast: true,
                     position: "top-end",
@@ -249,7 +260,7 @@
                 event.preventDefault();
             }
         });
-        $('#quantity_voucher_update').on('input', function () {
+        $('#quantity_voucher_update').on('input', function() {
             this.value = this.value.replace(/\D/g, '');
         });
     </script>

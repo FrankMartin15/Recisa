@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Carbon\Carbon;
 
 
 class Patient extends Model
@@ -22,8 +24,12 @@ class Patient extends Model
         'names',
         'surnames',
         'phone',
-        'date',
+        'age',
         'history_number'
+    ];
+
+    protected $casts = [
+        'age' => 'date', // <-- Apuntamos a la columna 'age'
     ];
 
     public function appointments()
@@ -40,5 +46,17 @@ class Patient extends Model
     public function getSlugAttribute()
     {
         return Str::slug($this->names);
+    }
+
+     protected function calculatedAge(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if ($this->age) {
+                    return $this->age->age;
+                }
+                return 'N/A';
+            }
+        );
     }
 }

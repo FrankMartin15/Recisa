@@ -93,9 +93,9 @@
                             <tr>
                                 <th style="width: 20px;text-align: center !important; font-weight:bold">Foto</th>
                                 <th style="width: 100px;text-align: center !important; font-weight:bold">DNI</th>
-                                <th style="width: 1000px;text-align: center !important; font-weight:bold">Usuario</th>
-                                <th style="width: 100px;text-align: center !important; font-weight:bold">Celular</th>
-                                <th style="width: 300px;text-align: center !important; font-weight:bold">Email</th>
+                                <th style="width: 700px;text-align: center !important; font-weight:bold">Usuario</th>
+                                <th style="width: 300px;text-align: center !important; font-weight:bold">Celular</th>
+                                <th style="width: 500px;text-align: center !important; font-weight:bold">Email</th>
                                 <th style="width: 100px;text-align: center !important; font-weight:bold">Rol</th>
                                 <th style="width: 150px;text-align: center !important; font-weight:bold">Estado</th>
                                 <th style="width: 300px;text-align: center !important; font-weight:bold">Creación</th>

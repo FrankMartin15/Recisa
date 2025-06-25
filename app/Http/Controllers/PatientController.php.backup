@@ -123,6 +123,8 @@ class PatientController extends Controller
             return null;
         }
     }
+
+
     public function edit($slug)
     {
         // Buscar al usuario cuyo slug generado coincide con el parámetro
@@ -176,13 +178,27 @@ class PatientController extends Controller
             $patients = Patient::all();
 
             // ✅ CONFIGURACIÓN OPTIMIZADA DE mPDF
-            $mpdf = $this->createSafeMpdf(); // OLD: new Mpdf([
+            $mpdf = new Mpdf([
+                'mode' => 'utf-8',
+                'format' => 'A4',
+                'tempDir' => storage_path('app/temp'),
+
+                // ✅ CONFIGURACIONES CRÍTICAS PARA EVITAR TIMEOUTS
+                'curlTimeout' => 3, // Timeout corto para recursos externos
+                'curlFollowLocation' => false, // No seguir redirects
+                'allowedRemoteHosts' => [], // Bloquear hosts remotos
+                'useActiveForms' => false, // Desactivar formularios activos
+
+                // ✅ CONFIGURACIONES DE MEMORIA
+                'fontDir' => [public_path('fonts/')],
+                'default_font' => 'Arial'
+            ]);
 
             // ✅ DESACTIVAR DESCARGA DE RECURSOS EXTERNOS
             $mpdf->curlAllowUnsafeSslRequests = false;
 
             // Cargar la vista de manera más eficiente
-            $html = view('report.patient_report', compact('patients'))->render();
+            $html = view('report.patient_report_optimized', compact('patients'))->render();
 
             // ✅ LIMPIAR HTML DE RECURSOS EXTERNOS
             $html = $this->cleanHtmlForPdf($html);
@@ -236,6 +252,8 @@ class PatientController extends Controller
 
         return $css . $html;
     }
+
+
     public function report_patient($dni)
     {
         try {
@@ -270,7 +288,17 @@ class PatientController extends Controller
             ]);
 
             // ✅ CONFIGURACIÓN SIMPLIFICADA SIN FUENTES EXTERNAS
-            $mpdf = $this->createSafeMpdf(); // OLD: new Mpdf([
+            $mpdf = new Mpdf([
+                'mode' => 'utf-8',
+                'format' => 'A4',
+                'tempDir' => storage_path('app/temp'),
+                'curlTimeout' => 3,
+                'allowedRemoteHosts' => [],
+                'useActiveForms' => false,
+                'default_font' => 'Arial',
+                'fontDir' => [],
+                'fontdata' => []
+            ]);
 
             $mpdf->curlAllowUnsafeSslRequests = false;
 

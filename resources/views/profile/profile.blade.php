@@ -174,7 +174,7 @@
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-5">
-                                        <p class="mb-0">Apellidos</p>
+                                        <p style="font-weight: bold" class="mb-0">Apellidos</p>
                                     </div>
                                     <div class="col-md-7">
                                         <p class="text-muted mb-0">{{ $user->surnames }}</p>
@@ -183,7 +183,7 @@
                                 <hr>
                                 <div class="row">
                                     <div class="col-md-5">
-                                        <p class="mb-0">Nombres</p>
+                                        <p style="font-weight: bold" class="mb-0">Nombres</p>
                                     </div>
                                     <div class="col-md-7">
                                         <p class="text-muted mb-0">{{ $user->names }}</p>
@@ -192,7 +192,7 @@
                                 <hr>
                                 <div class="row">
                                     <div class="col-md-5">
-                                        <p class="mb-0">DNI</p>
+                                        <p style="font-weight: bold" class="mb-0">DNI</p>
                                     </div>
                                     <div class="col-md-7">
                                         <p class="text-muted mb-0">{{ $user->dni }}</p>
@@ -270,7 +270,6 @@
                 </div>
             </div>
         </div>
-        <div class="card shadow mb-5"></div>
     </div>
 @endsection
 @push('js')

@@ -3,32 +3,46 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ConnectionStatusMiddleware
 {
     public function handle($request, Closure $next)
     {
-        // Aquí puedes implementar la lógica para determinar si está online o offline
-        $isOnline = $this->checkConnection(); // Implementa esta función según tu lógica
+        $isOnline = $this->checkConnection();
 
         // Establecer el estado de conexión en la sesión
         session(['connection_status' => $isOnline]);
-        // Depurar el valor
+        
+        // Pasar a todas las vistas
+        view()->share('serverOnline', $isOnline);
+        
+        // Log para debugging
+        Log::info('Connection Status:', ['online' => $isOnline]);
+        
         return $next($request);
     }
 
     private function checkConnection()
     {
-        // Ejemplo: Verificar si un servicio externo está disponible
         try {
-            $connected = @fsockopen("www.google.com", 80); 
+            // 1. Verificar conexión a base de datos
+            DB::connection()->getPdo();
+            
+            // 2. Verificar conexión a internet (opcional)
+            $connected = @fsockopen("8.8.8.8", 53, $errno, $errstr, 3);
             if ($connected) {
                 fclose($connected);
-                return true; // Online
+                return true;
             }
+            
+            // Si la BD funciona pero no hay internet, aún consideramos online
+            return true;
+            
         } catch (\Exception $e) {
-            return false; // Offline
+            Log::warning('Connection check failed:', ['error' => $e->getMessage()]);
+            return false;
         }
-        return false; // Offline
     }
 }

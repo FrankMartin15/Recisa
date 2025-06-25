@@ -162,7 +162,7 @@ class AdminController extends Controller
         // Obtener el contenido HTML de la vista
         $html = $view->render();
         // Crear una instancia de mPDF
-        $mpdf = $this->createSafeMpdf();
+        $mpdf = new Mpdf();
         // Configurar el pie de página centrado
         $footerHtml = '<footer>Página {PAGENO} de {nbpg}</footer>';
         $mpdf->SetHTMLFooter($footerHtml);      
@@ -187,7 +187,7 @@ class AdminController extends Controller
         // Obtener el contenido HTML de la vista
         $html = $view->render();
         // Crear una instancia de mPDF
-        $mpdf = $this->createSafeMpdf();
+        $mpdf = new Mpdf();
         // Configurar el pie de página centrado
         $footerHtml = '<footer>Página {PAGENO} de {nbpg}</footer>';
         $mpdf->SetHTMLFooter($footerHtml);      

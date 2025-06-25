@@ -49,7 +49,7 @@
 </script>
 @endif
 <div class="row">
-    <div class="col-md-5" style="margin-top: 20px;">
+    <div class="col-md-6" style="margin-top: 20px;">
         <div class="card shadow mb-4">
             <div class="card-header py-3">
                 <h6 class="text-primary fw-bold m-0">Asignar Doctor a Especialidad</h6>
@@ -81,8 +81,8 @@
                             <div class="mb-3">
                                 <div class="input-group">
                                     <span class="input-group-text" id="basic-addon3">Especialidad</span>
-                                    <select title="...." data-style="btn-secondary" data-size="3" data-live-search="true"
-                                        class="form-control selectpicker show-tick" id="id_specialization"
+                                    <select title="...." data-style="btn-secondary" data-live-search="true"
+                                        class="form-select" id="id_specialization"
                                         name="id_specialization">
                                         @foreach ($specializations as $specialization)
                                         <option value="{{ $specialization->id }}"
@@ -106,8 +106,8 @@
                         <div class="col-md-7">
                             <div class="input-group">
                                 <span class="input-group-text" id="basic-addon3">Doctor</span>
-                                <select title="...." data-style="btn-secondary" data-size="3" data-live-search="true"
-                                    id="id_doctor" class="form-control selectpicker show-tick"
+                                <select title="...." data-style="btn-secondary" data-live-search="true"
+                                    id="id_doctor" class="form-select"
                                     style="width: 120px;" name="id_doctor">
                                     @foreach ($doctor as $userDoctor)
                                     <option value="{{ $userDoctor->id }}"
@@ -137,7 +137,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-7" style="margin-top: 20px;">
+    <div class="col-md-6" style="margin-top: 20px;">
         <div class="card shadow">
             <div class="card-header py-3">
                 <p class="text-primary m-0 fw-bold">Lista de Asignaciones</p>
@@ -148,12 +148,12 @@
                     <table class="table my-0" id="asignaciones">
                         <thead>
                             <tr>
-                                <th>#</th>
-                                <th>Nombre Doctor</th>
-                                <th>Especialidad</th>
-                                <th>Cupos</th>
-                                <th>Creado</th>
-                                <th>Acciones</th>
+                                <th style="font-weight: bold; text-align: center;">#</th>
+                                <th style="font-weight: bold; text-align: center;">Nombre Doctor</th>
+                                <th style="font-weight: bold; text-align: center;">Especialidad</th>
+                                <th style="font-weight: bold; text-align: center;">Cupos</th>
+                                <th style="font-weight: bold; text-align: center;">Creado</th>
+                                <th style="font-weight: bold; text-align: center;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -161,10 +161,10 @@
                             $count = 0; // Inicializamos el contador
                             @endphp
                             @foreach ($userSpecializations as $index => $value)
-                            <tr data-id="{{ $index + 1 }}">
-                                <td>{{ $index + 1 }}</td>
-                                <td>{{ $value->user->names }} {{ $value->user->surnames }}</td>
-                                <td>
+                            <tr style="text-align: center" data-id="{{ $index + 1 }}">
+                                <td style="text-align: center">{{ $index + 1 }}</td>
+                                <td style="text-align: center">{{ $value->user->names }} {{ $value->user->surnames }}</td>
+                                <td style="text-align: center">
                                     {{ $value->specialization->name }}
                                 </td>
                                 <td class="text-center">

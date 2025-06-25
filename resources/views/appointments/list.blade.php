@@ -40,13 +40,13 @@
                                 <thead>
                                     <tr>
                                         <th style="width: 20px; font-weight:bold; text-align:center">#</th>
-                                        <th style="width: 250px;">Paciente</th>
-                                        <th style="width: 300px;">Doctor</th>
-                                        <th style="width: 250px;">Especialidad</th>
-                                        <th style="width: 300px;">Fecha</th>
-                                        <th style="width: 150px;">Hora</th>
-                                        <th style="width: 150px;">Estado</th>
-                                        <th class="text-center">Opciones</th>
+                                        <th style="width: 400px;font-weight:bold;">Paciente</th>
+                                        <th style="width: 400px;font-weight:bold;">Doctor</th>
+                                        <th style="width: 250px;font-weight:bold;">Especialidad</th>
+                                        <th style="width: 200px;font-weight:bold;">Fecha</th>
+                                        <th style="width: 150px;font-weight:bold;">Hora</th>
+                                        <th style="text-align: center; width: 200px;font-weight:bold;">Estado</th>
+                                        <th style="text-align: center;font-weight:bold;">Opciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -72,7 +72,7 @@
                                                     @default
                                                 @endswitch
                                             </td>
-                                            <td>
+                                            <td class="text-center">
                                                 <div class="btn-group" role="group">
                                                     <a href="{{url('recisa/appoitnment/show/'.$appointment->id)}}" class="btn btn-primary" style="background: #48C9B0 !important;"><i class="fa-solid fa-eye"></i></a>
                                                 </div>

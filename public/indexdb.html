@@ -1,0 +1,54 @@
+// ⭐ CREAR archivo temporal: public/clean-indexeddb.html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Limpieza IndexedDB</title>
+</head>
+<body>
+    <h1>🧹 Limpiando IndexedDB...</h1>
+    <div id="status">Iniciando...</div>
+    
+    <script>
+    async function cleanAllIndexedDB() {
+        const statusDiv = document.getElementById('status');
+        
+        try {
+            statusDiv.innerHTML = '🧹 Eliminando base de datos corrupta...';
+            
+            // Eliminar completamente la DB corrupta
+            await new Promise((resolve, reject) => {
+                const deleteReq = indexedDB.deleteDatabase('recisa-offline-db');
+                
+                deleteReq.onsuccess = () => {
+                    statusDiv.innerHTML += '<br>✅ Base de datos eliminada exitosamente';
+                    resolve();
+                };
+                
+                deleteReq.onerror = (e) => {
+                    statusDiv.innerHTML += '<br>❌ Error: ' + e.target.error;
+                    reject(e);
+                };
+                
+                deleteReq.onblocked = () => {
+                    statusDiv.innerHTML += '<br>⚠️ Eliminación bloqueada. Cierre otras pestañas.';
+                    setTimeout(() => resolve(), 2000);
+                };
+            });
+            
+            // Limpiar localStorage relacionado
+            localStorage.removeItem('lastSyncTime');
+            localStorage.removeItem('recisa-offline-settings');
+            
+            statusDiv.innerHTML += '<br>✅ Limpieza completa terminada';
+            statusDiv.innerHTML += '<br>🔄 <strong>Ahora puede cerrar esta pestaña y recargar su aplicación</strong>';
+            
+        } catch (error) {
+            statusDiv.innerHTML += '<br>❌ Error crítico: ' + error.message;
+        }
+    }
+    
+    // Ejecutar limpieza automáticamente
+    cleanAllIndexedDB();
+    </script>
+</body>
+</html>

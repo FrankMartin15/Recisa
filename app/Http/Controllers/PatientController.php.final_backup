@@ -123,6 +123,8 @@ class PatientController extends Controller
             return null;
         }
     }
+
+
     public function edit($slug)
     {
         // Buscar al usuario cuyo slug generado coincide con el parámetro
@@ -178,11 +180,16 @@ class PatientController extends Controller
             // ✅ CONFIGURACIÓN OPTIMIZADA DE mPDF
             $mpdf = $this->createSafeMpdf(); // OLD: new Mpdf([
 
+                // ✅ CONFIGURACIONES CRÍTICAS PARA EVITAR TIMEOUTS
+                'curlFollowLocation' => false, // No seguir redirects
+
+                // ✅ CONFIGURACIONES DE MEMORIA
+
             // ✅ DESACTIVAR DESCARGA DE RECURSOS EXTERNOS
             $mpdf->curlAllowUnsafeSslRequests = false;
 
             // Cargar la vista de manera más eficiente
-            $html = view('report.patient_report', compact('patients'))->render();
+            $html = view('report.patient_report_optimized', compact('patients'))->render();
 
             // ✅ LIMPIAR HTML DE RECURSOS EXTERNOS
             $html = $this->cleanHtmlForPdf($html);
@@ -236,6 +243,8 @@ class PatientController extends Controller
 
         return $css . $html;
     }
+
+
     public function report_patient($dni)
     {
         try {

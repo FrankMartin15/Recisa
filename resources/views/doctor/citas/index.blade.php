@@ -28,7 +28,7 @@
             </script>            
         @endif   
         <div class="row">
-            <div class="col-md-8">
+            <div class="col-md-6">
                 <div class="card shadow">
                     <div class="card-header py-3">
                         <p class="text-primary m-0 fw-bold">Citas Pendientes</p>
@@ -39,21 +39,21 @@
                                 <thead>
                                     <tr>
                                         <th style="width: 20px; font-weight:bold; text-align:center">#</th>
-                                        <th style="width: 250px;">Paciente</th>
-                                        <th style="width: 250px;">Especialidad</th>
-                                        <th style="width: 150px;">Fecha</th>
-                                        <th style="width: 150px;">Hora</th>
-                                        <th class="text-center">Opciones</th>
+                                        <th style="width: 450px; font-weight:bold; text-align:center">Paciente</th>
+                                        <th style="width: 200px; font-weight:bold; text-align:center">Especialidad</th>
+                                        <th style="width: 200px; font-weight:bold; text-align:center">Fecha</th>
+                                        <th style="width: 100px; font-weight:bold; text-align:center">Hora</th>
+                                        <th style="font-weight:bold; text-align:center" class="text-center">Opciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach ($appointments as $value => $appointment)
                                         <tr>
-                                            <td>{{ $value + 1 }}</td>
-                                            <td>{{ $appointment->patient->names }} {{ $appointment->patient->surnames }}</td>
-                                            <td>{{ $appointment->doctor->specialization->name }}</td>
-                                            <td>{{ $appointment->date }}</td>
-                                            <td>{{ $appointment->time }}</td>
+                                            <td style="text-align: left">{{ $value + 1 }}</td>
+                                            <td style="text-align: left">{{ $appointment->patient->names }} {{ $appointment->patient->surnames }}</td>
+                                            <td style="text-align: left">{{ $appointment->doctor->specialization->name }}</td>
+                                            <td style="text-align: left">{{ $appointment->date }}</td>
+                                            <td style="text-align: left">{{ $appointment->time }}</td>
                                             <td class="text-center">
                                                 <div class="btn-group" role="group">
                                                     <a href="{{ url('doctor/attend/edit/'.$appointment->id) }}" class="btn btn-primary" style="background: #F4D03F !important;">
@@ -69,7 +69,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="card shadow mb-4">
                     <div class="card-header py-3">
                         <h6 class="text-primary fw-bold m-0">Avance de Atención</h6>

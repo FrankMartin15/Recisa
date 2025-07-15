@@ -33,6 +33,7 @@ class AppointmentController extends Controller
         $doctors=User::with(['specializations.specialization.userSpecializations.appointment' => function($query) use ($today) {
             $query->where('date', $today)->where('status', 0); // Filtra las citas aquí para el modal
         }])
+                      ->whereHas('specializations') // Asegura que solo doctores con especialidades sean listados
                       ->where('user_level',3)->get();
         return view('appointments.created',compact('quotas','patients','today','doctors','hour'));
     }

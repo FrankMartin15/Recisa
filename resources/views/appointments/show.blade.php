@@ -1,4 +1,4 @@
-@extends('Layouts.app')
+@extends('layouts.app')
 @section('title', 'Ver Cita')
 @push('css')
 @endpush
@@ -126,7 +126,7 @@
                             <p class="mb-0">Edad</p>
                         </div>
                         <div class="col-sm-9">
-                            <p class="text-muted mb-0">{{ $appointment->patient->date }}</p>
+                            <p class="text-muted mb-0">{{ $appointment->patient->calculated_age }} años</p>
                         </div>
                     </div>
                 </div>

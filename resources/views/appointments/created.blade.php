@@ -59,7 +59,7 @@
                                     <select name="id_quota" id="id_quota" data-style="btn-secondary" data-live-search="true" data-size="3" class="form-control selectpicker" title="Seleccione el médico y especialidad" required>
                                         @foreach ($quotas as $quota)
                                         <optgroup label="{{ $quota->user->surnames }}, {{ $quota->user->names }} -> cupos: {{ $quota->cupo_doctor }}">
-                                            <option value="{{ $quota->id }}" {{ old('id_quota') == $quota->id ? 'selected' : '' }} {{ $quota->cupo_doctor == 0 ? 'disabled' : '' }}>
+                                            <option value="{{ $quota->id }}" data-doctor-id="{{ $quota->user->id }}" {{ old('id_quota') == $quota->id ? 'selected' : '' }} {{ $quota->cupo_doctor == 0 ? 'disabled' : '' }}>
                                                 {{ $quota->specialization->name }}
                                             </option>
                                         </optgroup>
@@ -180,9 +180,11 @@
                                                                     <tbody>
                                                                         @foreach ($userSpecialization->appointment->where('date', $today)->where('status', 0)->sortBy('time') as $appointment)
                                                                         <tr>
-                                                                            <td class="text-center">{{ $loop->iteration }}</td>
+                                                                            <td class="text-center"></td> {{-- Dejar vacío, DataTables lo llenará --}}
                                                                             <td>{{ $appointment->patient->surnames }}, {{ $appointment->patient->names }}</td>
-                                                                            <td class="text-center">{{ \Carbon\Carbon::parse($appointment->time)->format('h:i A') }}</td>
+                                                                            <td class="text-center" data-order="{{ \Carbon\Carbon::parse($appointment->time)->format('H:i') }}">
+                                                                                {{ \Carbon\Carbon::parse($appointment->time)->format('h:i A') }}
+                                                                            </td>
                                                                         </tr>
                                                                         @endforeach
                                                                     </tbody>
@@ -222,222 +224,325 @@
 
 <script>
 $(document).ready(function() {
-    console.log('🚀 Inicializando página de citas...');
+    // ⭐ GUARDAR DATOS ORIGINALES
+    const originalQuotaOptions = $('#id_quota').html();
+    const originalPatientOptions = $('#id_patient').html();
     
-    // Inicializar selectpickers y DataTables
-    $('.selectpicker').selectpicker();
-
-    var commonDataTableSettings = {
-        responsive: true,
-        autoWidth: false,
-         pageLength: 10,
-        language: {
-            "lengthMenu": 'Mostrar <select class="form-select form-select-sm mb-1 me-1 ms-1"><option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="20">20</option></select> registros',
-            "zeroRecords": "No se encontró nada",
-            "info": "Página _PAGE_ de _PAGES_ (_TOTAL_ registros)",
-            "infoEmpty": "No hay registros disponibles",
-            "infoFiltered": "(filtrado de _MAX_ registros totales)",
-            "search": "Buscar:",
-            "emptyTable": "Tabla sin datos",
-            "paginate": { "next": ">", "previous": "<" }
+    // ⭐ FUNCIÓN PARA ACTUALIZAR EL MODAL DE CITAS
+    function actualizarModalDeCitas(doctorId, patientName, appointmentTime) {
+        console.log(`✍️ Actualizando modal para doctor ID: ${doctorId}`);
+        
+        const modalSelector = `#ver-${doctorId}`;
+        const modal = $(modalSelector);
+        
+        if (modal.length === 0) {
+            console.error(`Modal no encontrado para el doctor ID: ${doctorId}`);
+            return;
         }
-    };
-
-    $('#asignaciones').DataTable($.extend({}, commonDataTableSettings, {
-        "info": "Página _PAGE_ de _PAGES_ (_TOTAL_ doctores)"
-    }));
-
-    $('table.citas-today-table').each(function() {
-        $(this).DataTable($.extend({}, commonDataTableSettings, {
-            "info": "Página _PAGE_ de _PAGES_ (_TOTAL_ citas)",
-            "lengthMenu": '<select class="form-select form-select-sm mb-1 me-1 ms-1"><option value="3">3</option><option value="5">5</option><option value="10">10</option></select>'
-        }));
-    });
-
-    // Configurar horas disponibles
-    var reservedHoursRaw = @json($hour->pluck('time')->all() ?? []);
-    var reservedHours = reservedHoursRaw.map(function(time) {
-        return time.slice(0, 5);
-    });
-
-    var selectTime = $('#time');
-    var horasManana = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00'];
-    var horasTarde = ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'];
-    selectTime.empty();
-    
-    function agregarHorasOptgroup(horas, turnoLabel) {
-        let optgroup = $(`<optgroup label="${turnoLabel}">`);
-        let hasAvailableSlots = false;
-        $.each(horas, function(key, value) {
-            if (!reservedHours.includes(value)) {
-                optgroup.append('<option value="' + value + '">' + value + '</option>');
-                hasAvailableSlots = true;
+        
+        // Formatear la hora a h:i A (ej. 03:30 PM)
+        const timeParts = appointmentTime.split(':');
+        const hours = parseInt(timeParts[0], 10);
+        const minutes = timeParts[1];
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const formattedHours = ((hours + 11) % 12 + 1);
+        const displayTime = `${formattedHours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+        
+        // Buscar la tabla de citas dentro del modal
+        const table = modal.find('.citas-today-table');
+        
+        if (table.length > 0) {
+            const tbody = table.find('tbody');
+            const newRowHtml = `
+                <tr>
+                    <td class="text-center">${tbody.find('tr').length + 1}</td>
+                    <td>${patientName}</td>
+                    <td class="text-center">${displayTime}</td>
+                </tr>
+            `;
+            tbody.append(newRowHtml);
+            console.log('✅ Fila de cita agregada a la tabla existente.');
+        } else {
+            // Si la tabla no existe (porque no había citas), la creamos
+            console.log('⚠️ Tabla no encontrada, creando una nueva.');
+            const specializationName = $('#id_quota option:selected').text().trim();
+            const newTableHtml = `
+                <h6 class="text-center mt-3" style="color: #00476D !important;">
+                    ${specializationName}
+                </h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped my-0 citas-today-table">
+                        <thead>
+                            <tr>
+                                <th class="text-center">#</th>
+                                <th>Paciente</th>
+                                <th class="text-center">Hora</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-center">1</td>
+                                <td>${patientName}</td>
+                                <td class="text-center">${displayTime}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            // Reemplazar el mensaje de "no hay citas"
+            const noAppointmentsMessage = modal.find('.modal-body').find('p:contains("No hay citas programadas")');
+            if (noAppointmentsMessage.length > 0) {
+                noAppointmentsMessage.first().replaceWith(newTableHtml);
+            } else {
+                modal.find('.modal-body').append(newTableHtml);
             }
-        });
-        if (hasAvailableSlots) {
-            selectTime.append(optgroup);
+            console.log('✅ Nueva tabla de citas creada y agregada al modal.');
         }
     }
     
-    agregarHorasOptgroup(horasManana, 'Turno Mañana');
-    agregarHorasOptgroup(horasTarde, 'Turno Tarde');
-    selectTime.selectpicker('refresh');
-
-    // ⭐ MANEJO CORREGIDO DEL FORMULARIO
-    // En la vista
-$('#appointment-form').on('submit', function(event) {
-    event.preventDefault(); // Mantenemos el preventDefault aquí por seguridad
-    console.log('📝 Formulario enviado, delegando a Offline Manager...');
-    
-    const submitBtn = $('#submit-btn');
-    const btnText = $('#btn-text');
-    const btnSpinner = $('#btn-spinner');
-    
-    // Deshabilitar botón
-    submitBtn.prop('disabled', true);
-    btnText.addClass('d-none');
-    btnSpinner.removeClass('d-none');
-
-    // VERIFICACIÓN SEGURA
-    if (window.recisaOffline && typeof window.recisaOffline.processForm === 'function') {
+    // ⭐ FUNCIÓN MEJORADA PARA RESTAURAR SELECTPICKERS
+    function restaurarSelectPickersCompleto() {
+        console.log('🔄 Restaurando selectpickers...');
         
-        // ✅ LLAMADA CORRECTA: Pasamos el objeto 'event' completo
-        window.recisaOffline.processForm(event).finally(() => {
-            // El `finally` aquí es opcional, ya que tu `processForm` no restaura el botón.
-            // Es mejor dejar que `processForm` no maneje la UI para desacoplar.
-            // La restauración del botón la podrías manejar en las alertas
-            // o simplemente confiar en que el reset del form o la redirección lo soluciona.
-            // Para ser seguros, lo restauramos aquí también.
+        try {
+            // Destruir selectpickers existentes
+            $('#id_quota, #id_patient, #time').selectpicker('destroy');
+        } catch(e) {
+            // Ignorar errores de destrucción
+        }
+        
+        // Restaurar HTML original SIN agregar opciones vacías
+        $('#id_quota').html(originalQuotaOptions);
+        $('#id_patient').html(originalPatientOptions);
+        
+        // Limpiar el select de tiempo completamente
+        $('#time').empty();
+        
+        // Reinicializar selectpickers sin valores seleccionados
+        $('#id_quota').selectpicker({
+            title: 'Seleccione el médico y especialidad'
+        });
+        $('#id_patient').selectpicker({
+            title: 'Seleccione al Paciente...'
+        });
+        $('#time').selectpicker({
+            title: 'Seleccione una hora'
+        });
+        
+        // Regenerar horas disponibles
+        regenerarHorasDisponibles();
+        
+        console.log('✅ Selectpickers restaurados correctamente');
+    }
+    
+    // ⭐ FUNCIÓN MEJORADA PARA REGENERAR HORAS
+    function regenerarHorasDisponibles() {
+        console.log('🕐 Regenerando horas disponibles...');
+        
+        var selectTime = $('#time');
+        var horasManana = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00'];
+        var horasTarde = ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'];
+        
+        var reservedHours = @json($hour->pluck('time')->all() ?? []).map(time => time.slice(0, 5));
+        console.log('⏰ Horas reservadas:', reservedHours);
+        
+        // Limpiar completamente el select
+        selectTime.empty();
+        
+        function agregarHoras(horas, turno) {
+            let optgroup = $(`<optgroup label="${turno}">`);
+            let hasSlots = false;
+            horas.forEach(hora => {
+                if (!reservedHours.includes(hora)) {
+                    optgroup.append(`<option value="${hora}">${hora}</option>`);
+                    hasSlots = true;
+                }
+            });
+            if (hasSlots) {
+                selectTime.append(optgroup);
+            }
+        }
+        
+        agregarHoras(horasManana, 'Turno Mañana');
+        agregarHoras(horasTarde, 'Turno Tarde');
+        
+        // Refrescar el selectpicker
+        selectTime.selectpicker('refresh');
+        
+        console.log('✅ Horas regeneradas, total opciones:', $('#time option').length);
+        
+        // Verificar que el selectpicker funcione correctamente
+        setTimeout(() => {
+            if ($('#time option').length === 0) {
+                console.log('⚠️ No hay horas disponibles, regenerando...');
+                // Si no hay opciones, agregar al menos una opción temporal
+                selectTime.append('<option value="">No hay horas disponibles</option>');
+                selectTime.selectpicker('refresh');
+            }
+        }, 100);
+    }
+    
+    // Inicializar selectpickers
+    $('.selectpicker').selectpicker();
+
+    // Configurar horas disponibles INICIALMENTE
+    regenerarHorasDisponibles();
+
+    // ⭐ CONFIGURAR DATATABLES UNA SOLA VEZ
+    if (!$.fn.DataTable.isDataTable('#asignaciones')) {
+        $('#asignaciones').DataTable({
+            responsive: true,
+            autoWidth: false,
+            pageLength: 10,
+            language: {
+                "lengthMenu": 'Mostrar <select class="form-select form-select-sm mb-1 me-1 ms-1"><option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="20">20</option></select> registros',
+                "zeroRecords": "No se encontró nada",
+                "info": "Página _PAGE_ de _PAGES_ (_TOTAL_ doctores)",
+                "infoEmpty": "No hay registros disponibles",
+                "infoFiltered": "(filtrado de _MAX_ registros totales)",
+                "search": "Buscar:",
+                "emptyTable": "Tabla sin datos",
+                "paginate": { "next": ">", "previous": "<" }
+            }
+        });
+    }
+
+    // ⭐ MANEJAR DATATABLES EN MODALES (CORREGIDO Y FINAL)
+    $('[id^="ver-"]').on('shown.bs.modal', function() {
+        var modal = $(this);
+        modal.find('.citas-today-table').each(function() {
+            var tableEl = $(this);
+            if (!$.fn.DataTable.isDataTable(tableEl)) {
+                var dt = tableEl.DataTable({
+                    responsive: true,
+                    pageLength: 5,
+                    searching: false,
+                    lengthChange: true, // Activado para mostrar el menú
+                    info: true,
+                    paging: true,
+                    order: [[2, "asc"]], // Ordenar por la columna de hora (índice 2)
+                    language: { // Traducciones completas
+                        "lengthMenu": 'Mostrar <select class="form-select form-select-sm mb-1 me-1 ms-1"><option value="5">5</option><option value="10">10</option><option value="15">15</option><option value="20">20</option></select> registros',
+                        "info": "Página _PAGE_ de _PAGES_",
+                        "infoEmpty": "No hay citas",
+                        "infoFiltered": "",
+                        "paginate": { "next": ">", "previous": "<" },
+                        "zeroRecords": "No hay citas para mostrar"
+                    },
+                    "columnDefs": [{
+                        "searchable": false,
+                        "orderable": false,
+                        "targets": 0
+                    }]
+                });
+
+                // Función para la numeración automática
+                dt.on('order.dt search.dt', function () {
+                    dt.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
+                        cell.innerHTML = i + 1;
+                    } );
+                }).draw();
+            }
+        });
+    });
+
+    // Limpiar DataTables al cerrar modales
+    $('[id^="ver-"]').on('hidden.bs.modal', function() {
+        $(this).find('.citas-today-table').each(function() {
+            if ($.fn.DataTable.isDataTable(this)) {
+                $(this).DataTable().destroy();
+            }
+        });
+    });
+
+    // ⭐ MANEJO OPTIMIZADO DEL FORMULARIO
+    $('#appointment-form').on('submit', function(event) {
+        event.preventDefault();
+        
+        const submitBtn = $('#submit-btn');
+        const btnText = $('#btn-text');
+        const btnSpinner = $('#btn-spinner');
+        
+        // Deshabilitar botón
+        submitBtn.prop('disabled', true);
+        btnText.addClass('d-none');
+        btnSpinner.removeClass('d-none');
+
+        if (window.recisaOffline && typeof window.recisaOffline.processForm === 'function') {
+            // Procesar formulario
+            window.recisaOffline.processForm(event);
+            
+            // Obtener datos para actualizar el modal ANTES de resetear el form
+            const selectedQuotaOption = $('#id_quota option:selected');
+            const doctorId = selectedQuotaOption.data('doctor-id');
+            const patientName = $('#id_patient option:selected').text().trim();
+            const appointmentTime = $('#time').val();
+            
+            // Restauración después del envío
+            setTimeout(() => {
+                $('#appointment-form')[0].reset();
+                $('#date').val(new Date().toISOString().split('T')[0]);
+                restaurarSelectPickersCompleto();
+                
+                // Actualizar el modal con la nueva cita
+                if (doctorId && patientName && appointmentTime) {
+                    actualizarModalDeCitas(doctorId, patientName, appointmentTime);
+                }
+                
+                // Verificación adicional para evitar opciones en blanco
+                setTimeout(() => {
+                    verificarDuplicados();
+                }, 500);
+                
+                // Mostrar mensaje de éxito
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Cita Registrada',
+                    text: 'La cita ha sido registrada exitosamente.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                
+                // Restaurar botón
+                submitBtn.prop('disabled', false);
+                btnText.removeClass('d-none');
+                btnSpinner.addClass('d-none');
+            }, 1000);
+
+        } else {
             submitBtn.prop('disabled', false);
             btnText.removeClass('d-none');
             btnSpinner.addClass('d-none');
-        });
-
-    } else {
-        // ... (Tu lógica de error si recisaOffline no existe) ...
-        console.error('❌ recisaOffline no está disponible');
-        submitBtn.prop('disabled', false);
-        btnText.removeClass('d-none');
-        btnSpinner.addClass('d-none');
-        Swal.fire({
-            icon: 'error',
-            title: 'Error del Sistema',
-            text: 'El sistema offline no está disponible. Por favor, recarga la página.'
-        });
-    }
-});
-
-    // Verificar estado inicial de conexión
-    setTimeout(() => {
-        if (!navigator.onLine) {
-            console.log('📱 Página cargada en modo offline');
-            if (window.recisaOffline && window.recisaOffline.showAlert) {
-                window.recisaOffline.showAlert('offline', 'Modo Offline', 
-                    'Trabajando sin conexión. Los datos se guardarán localmente.');
-            }
-        } else {
-            console.log('🌐 Página cargada con conexión');
-        }
-    }, 2000);
-    
-    console.log('✅ Página de citas inicializada correctamente');
-});
-</script>
-<!-- ✅ SCRIPT PARA ARREGLAR DATATABLES EN MODAL -->
-<script>
-$(document).ready(function() {
-    // Inicializar DataTable cuando se muestre el modal
-    $('#ver-{{ $doctor->id }}').on('shown.bs.modal', function () {
-        // Buscar todas las tablas dentro de este modal
-        $(this).find('.citas-today-table').each(function() {
-            var $table = $(this);
-            var tableId = $table.attr('id');
-            
-            // Si ya existe una instancia de DataTable, destruirla
-            if ($.fn.DataTable.isDataTable('#' + tableId)) {
-                $('#' + tableId).DataTable().destroy();
-            }
-            
-            // Inicializar DataTable con configuración específica para modal
-            $table.DataTable({
-                "responsive": true,
-                "lengthChange": true,
-                "autoWidth": false,
-                "searching": true,
-                "ordering": true,
-                "info": true,
-                "paging": true,
-                "pageLength": 10,
-                "lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "Todos"]],
-                "language": {
-                    "decimal": "",
-                    "emptyTable": "No hay datos disponibles en la tabla",
-                    "info": "Mostrando _START_ a _END_ de _TOTAL_ entradas",
-                    "infoEmpty": "Mostrando 0 a 0 de 0 entradas",
-                    "infoFiltered": "(filtrado de _MAX_ entradas totales)",
-                    "infoPostFix": "",
-                    "thousands": ",",
-                    "lengthMenu": "Mostrar _MENU_ entradas",
-                    "loadingRecords": "Cargando...",
-                    "processing": "Procesando...",
-                    "search": "Buscar:",
-                    "zeroRecords": "No se encontraron registros coincidentes",
-                    "paginate": {
-                        "first": "Primero",
-                        "last": "Último",
-                        "next": "Siguiente",
-                        "previous": "Anterior"
-                    },
-                    "aria": {
-                        "sortAscending": ": activar para ordenar la columna ascendente",
-                        "sortDescending": ": activar para ordenar la columna descendente"
-                    }
-                },
-                "dom": '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
-                       '<"row"<"col-sm-12"tr>>' +
-                       '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                "columnDefs": [
-                    { "orderable": false, "targets": 0 }, // Deshabilitar ordenamiento en columna #
-                    { "className": "text-center", "targets": [0, 2] } // Centrar columnas # y Hora
-                ],
-                "order": [[ 2, "asc" ]], // Ordenar por hora por defecto
-                "drawCallback": function(settings) {
-                    // Ajustar columnas después del dibujado
-                    this.api().columns.adjust();
-                },
-                "initComplete": function(settings, json) {
-                    // Ajustar columnas después de la inicialización completa
-                    this.api().columns.adjust();
-                }
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Sistema offline no disponible. Recarga la página.'
             });
-            
-            // Ajustar columnas después de un breve delay
-            setTimeout(function() {
-                if ($.fn.DataTable.isDataTable('#' + tableId)) {
-                    $('#' + tableId).DataTable().columns.adjust();
-                }
-            }, 100);
-        });
+        }
     });
-    
-    // Limpiar DataTable cuando se oculte el modal
-    $('#ver-{{ $doctor->id }}').on('hidden.bs.modal', function () {
-        $(this).find('.citas-today-table').each(function() {
-            var tableId = $(this).attr('id');
-            if ($.fn.DataTable.isDataTable('#' + tableId)) {
-                $('#' + tableId).DataTable().destroy();
-            }
-        });
-    });
-    
-    // ✅ SOLUCIÓN ADICIONAL: Manejar el redimensionamiento de ventana
-    $(window).on('resize', function() {
-        $('.citas-today-table').each(function() {
-            if ($.fn.DataTable.isDataTable(this)) {
-                $(this).DataTable().columns.adjust();
-            }
-        });
-    });
+
+    // ⭐ VERIFICACIÓN SIMPLE DE DUPLICADOS CADA 15 SEGUNDOS
+    setInterval(function() {
+        console.log('� Verificación periódica de duplicados...');
+        
+        const quotaOptions = $('#id_quota option');
+        const patientOptions = $('#id_patient option');
+        
+        // Si hay demasiadas opciones (más del doble esperado), restaurar
+        if (quotaOptions.length > 20 || patientOptions.length > 40) {
+            console.log('⚠️ Demasiadas opciones detectadas, restaurando...');
+            restaurarSelectPickersCompleto();
+        }
+    }, 15000);
+
+    // Verificar conexión inicial
+    setTimeout(() => {
+        if (!navigator.onLine && window.recisaOffline?.showAlert) {
+            window.recisaOffline.showAlert('offline', 'Modo Offline', 
+                'Trabajando sin conexión. Los datos se guardarán localmente.');
+        }
+    }, 1000);
 });
 </script>
 @endpush

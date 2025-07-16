@@ -77,7 +77,13 @@
                     <div class="card-body">
                         @foreach ($atendidos as $atendido)
                             @php
-                                $maxquatity= (($atendido->appointment_pending_count + $atendido->appointment_cancel_count) / ($atendido->cupo_doctor + $atendido->appointment_count))*100;
+                                $denominator = $atendido->cupo_doctor + $atendido->appointment_count;
+                                if ($denominator > 0) {
+                                    $maxquatity = (($atendido->appointment_pending_count + $atendido->appointment_cancel_count) / $denominator) * 100;
+                                    $maxquatity = max(0, min(100, $maxquatity)); // Asegurar que esté entre 0-100
+                                } else {
+                                    $maxquatity = 0; // O el valor que consideres adecuado
+                                }
                             @endphp
                             <h4 class="small fw-bold">{{$atendido->specialization->name}}
                                 @if ($maxquatity == 100)

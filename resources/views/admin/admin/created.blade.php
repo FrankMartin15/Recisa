@@ -49,7 +49,7 @@
                                     value="{{ old('names') }}">
                             </div>
                             <div class="col-md-4">
-                                <label for="surnames" class="form-label">Apellido:</label>
+                                <label for="surnames" class="form-label">Apellidos:</label>
                                 <input readonly class="form-control" type="text" name="surnames" id="surnames"
                                     value="{{ old('surnames') }}">
                             </div>
@@ -227,31 +227,108 @@
         });
 
         function buscarDNI() {
-            var dni = $('#documento').val();
+            var dni = $('#documento').val().trim();
+            
             // Validar longitud del DNI
             if (dni.length !== 8) {
-                showModal('El DNI debe tener 8 dígitos');
+                showModal('El DNI debe tener exactamente 8 dígitos', 'error');
+                return;
             }
-            if (!dni.trim()) {
-                showModal('Por favor, ingrese el DNI');
+            
+            if (!dni) {
+                showModal('Por favor, ingrese el DNI', 'error');
+                return;
             }
 
+            // Mostrar indicador de carga
+            $('#buscar').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Buscando...');
+            
+            // Limpiar campos previos
+            $('#surnames').val('');
+            $('#names').val('');
+            $('#dni').val('');
+
             $.ajax({
-                url: '{{ url('/admin/admin/add-consulta ') }}', // Ruta para la consulta del DNI
+                url: '{{ url('/admin/admin/add-consulta') }}', // Ruta para la consulta del DNI
                 type: 'POST',
                 data: {
                     '_token': '{{ csrf_token() }}',
                     'dni': dni
                 },
                 dataType: 'json',
+                timeout: 15000, // 15 segundos de timeout
                 success: function(response) {
-                    if (response.numeroDocumento == dni) {
-                        var nombreCompleto = response.apellidoPaterno + ' ' + response.apellidoMaterno;
+                    if (response.success && response.data) {
+                        // DNI encontrado exitosamente
+                        var data = response.data;
+                        var nombreCompleto = data.apellidoPaterno + ' ' + data.apellidoMaterno;
+                        
                         $('#surnames').val(nombreCompleto);
-                        $('#names').val(response.nombres);
-                        $('#dni').val(response.numeroDocumento);
+                        $('#names').val(data.nombres);
+                        $('#dni').val(data.numeroDocumento);
                         $('#documento').val('');
+                        
+                        // Bloquear campos para evitar edición
+                        $('#surnames').prop('readonly', true);
+                        $('#names').prop('readonly', true);
+                        $('#dni').prop('readonly', true);
+                        
+                        showModal('DNI ENCONTRADO', 'success');
+                    } else if (response.enable_manual) {
+                        // DNI no encontrado - Activar modo manual
+                        $('#dni').val(dni);
+                        $('#documento').val('');
+                        
+                        // Habilitar campos para registro manual
+                        $('#surnames').prop('readonly', false).attr('placeholder', 'Ingrese apellidos manualmente');
+                        $('#names').prop('readonly', false).attr('placeholder', 'Ingrese nombres manualmente');
+                        $('#dni').prop('readonly', true);
+                        
+                        // Enfocar el primer campo para continuar
+                        $('#names').focus();
+                        
+                        showModal('⚠️ DNI no encontrado en las bases de datos. Complete los datos manualmente.', 'warning');
+                    } else {
+                        showModal('DNI no encontrado en la base de datos', 'warning');
                     }
+                },
+                error: function(xhr, status, error) {
+                    console.log('Error completo:', xhr.responseText);
+                    
+                    if (xhr.status === 404) {
+                        // DNI no encontrado - intentar activar modo manual
+                        try {
+                            var response = JSON.parse(xhr.responseText);
+                            if (response.enable_manual) {
+                                $('#dni').val(dni);
+                                $('#documento').val('');
+                                
+                                // Habilitar campos para registro manual
+                                $('#surnames').prop('readonly', false).attr('placeholder', 'Ingrese apellidos manualmente');
+                                $('#names').prop('readonly', false).attr('placeholder', 'Ingrese nombres manualmente');
+                                $('#dni').prop('readonly', true);
+                                
+                                $('#names').focus();
+                                showModal('⚠️ DNI no encontrado. Complete los datos manualmente.', 'warning');
+                                return;
+                            }
+                        } catch(e) {
+                            console.log('Error parsing response:', e);
+                        }
+                        showModal('DNI no encontrado en la base de datos de RENIEC', 'warning');
+                    } else if (xhr.status === 422) {
+                        showModal('DNI inválido o respuesta incorrecta del servidor', 'error');
+                    } else if (xhr.status === 500) {
+                        showModal('Error del servidor. Inténtelo nuevamente', 'error');
+                    } else if (status === 'timeout') {
+                        showModal('Tiempo de espera agotado. Verifique su conexión', 'error');
+                    } else {
+                        showModal('Error de conexión. Inténtelo nuevamente', 'error');
+                    }
+                },
+                complete: function() {
+                    // Restaurar botón
+                    $('#buscar').prop('disabled', false).html('<i class="fas fa-search"></i> Buscar');
                 }
             });
         }
@@ -283,6 +360,17 @@
                 title: message
             });
         }
+
+        // Validación para nombres y apellidos: solo letras y espacios, automáticamente en mayúsculas
+        $('#names, #surnames').on('input', function() {
+            // Convertir a mayúsculas y permitir solo letras y espacios
+            this.value = this.value.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ\s]/g, '');
+        });
+
+        // Validación adicional al salir del campo para limpiar espacios múltiples
+        $('#names, #surnames').on('blur', function() {
+            this.value = this.value.replace(/\s+/g, ' ').trim();
+        });
     </script>
     <script src="{{ asset('assets/js/digitos_numericos.js') }}"></script>
     <script src="{{ asset('assets/js/manejo_carga_imagen.js') }}"></script>

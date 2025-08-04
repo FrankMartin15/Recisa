@@ -243,29 +243,48 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // --- LÓGICA PARA ESTADO DE CONEXIÓN (OPCIONAL, PERO ÚTIL) ---
+    // --- LÓGICA MEJORADA PARA ESTADO DE CONEXIÓN ---
     const offlineElements = document.querySelectorAll('.offline-hide');
-    const statusIndicator = document.getElementById('connection-status'); // Asegúrate de tener un elemento con este ID si lo quieres usar.
+    const statusIndicator = document.getElementById('connection-status');
 
-    function updateConnectionStatus() {
-        if (navigator.onLine) {
-            // Estás online
-            if (statusIndicator) {
-                statusIndicator.style.backgroundColor = 'green';
-                statusIndicator.title = 'Conectado a Internet';
+    async function updateConnectionStatus() {
+        try {
+            // Verificar conexión real
+            const online = navigator.onLine && await fetch('/csrf-token', { 
+                method: 'HEAD',
+                cache: 'no-cache',
+                timeout: 3000 
+            }).then(r => r.ok).catch(() => false);
+
+            if (online) {
+                // Conectado
+                if (statusIndicator) {
+                    statusIndicator.classList.remove('offline');
+                    statusIndicator.classList.add('online');
+                    statusIndicator.title = 'Conectado a Internet';
+                }
+                offlineElements.forEach(el => el.style.display = 'block');
+            } else {
+                // Desconectado
+                if (statusIndicator) {
+                    statusIndicator.classList.remove('online');
+                    statusIndicator.classList.add('offline');
+                    statusIndicator.title = 'Sin conexión a Internet';
+                }
+                offlineElements.forEach(el => el.style.display = 'none');
             }
-            offlineElements.forEach(el => el.style.display = 'block'); // Muestra los elementos
-        } else {
-            // Estás offline
+        } catch (error) {
+            console.log('Error verificando conectividad:', error);
+            // En caso de error, asumir offline
             if (statusIndicator) {
-                statusIndicator.style.backgroundColor = 'red';
+                statusIndicator.classList.remove('online');
+                statusIndicator.classList.add('offline');
                 statusIndicator.title = 'Sin conexión a Internet';
             }
-            offlineElements.forEach(el => el.style.display = 'none'); // Oculta los elementos
         }
     }
 
-    // Comprueba el estado al cargar y cuando cambia
+    // Verificar estado al cargar y cuando cambie
     updateConnectionStatus();
     window.addEventListener('online', updateConnectionStatus);
     window.addEventListener('offline', updateConnectionStatus);

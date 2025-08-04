@@ -438,7 +438,7 @@
         <div class="row justify-content-center">
             <div class="col-12 col-xl-10">
                 <div class="header-section">
-                    <h1 class="health-center-title">Puesto de Salud de Sausa</h1>
+                    <h1 class="health-center-title">Puesto de Salud de Sausa - JAUJA</h1>
                 </div>
                 
                 <div class="card login-card">

@@ -115,6 +115,29 @@
                     </form>
                 </div>
             </div>
+
+            <div class="card shadow mt-3">
+                <div class="card-header py-3">
+                    <p class="text-primary m-0 fw-bold">Herramientas de Consulta</p>
+                </div>
+                <div class="card-body">
+                    <div class="col-md-12 text-center">
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary btn-lg" onclick="window.open('https://cel.sis.gob.pe/SisConsultaEnLinea', '_blank')" style="background-color: #00476D !important; border-color: #00476D;">
+                                <i class="fa-solid fa-heart-pulse me-2"></i>
+                                Consultar SIS en Línea
+                                <i class="fa-solid fa-external-link-alt ms-2"></i>
+                            </button>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="fa-solid fa-info-circle me-1"></i>
+                                Se abrirá en una nueva pestaña del navegador
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <div class="col-md-6">
@@ -499,7 +522,7 @@ $(document).ready(function() {
                 Swal.fire({
                     icon: 'success',
                     title: 'Cita Registrada',
-                    text: 'La cita ha sido registrada exitosamente.',
+                    text: 'La cita ha sido registrada exitosamente y se mandó un mensaje al paciente.',
                     timer: 2000,
                     showConfirmButton: false
                 });

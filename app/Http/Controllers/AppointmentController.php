@@ -54,61 +54,6 @@ class AppointmentController extends Controller
             ]);
             $appointment->save();
 
-            // Cargar relaciones
-            $appointment->load('patient', 'doctor.user', 'doctor.specialization');
-
-            // Construir mensaje
-            $patientName = $appointment->patient->names;
-            $doctorName = $appointment->doctor->user->names;
-            $specialization = $appointment->doctor->specialization->name;
-            $date = $appointment->date;
-            $time = $appointment->time;
-            $message = "Hola $patientName, su cita ha sido registrada para el $date a las $time con el Dr. $doctorName, especialista en $specialization. ¡Por favor llegue 10 minutos antes!";
-
-            // Enviar por WhatsApp (UltraMsg en este ejemplo)
-            $token = "c66f0mclprch0rhu";
-            $instanceId = "instance137165";
-            $phone = $appointment->patient->phone;
-
-            $url = "https://api.ultramsg.com/$instanceId/messages/chat";
-            $data = [
-                "token" => $token,
-                "to" => "51$phone",
-                "body" => $message
-            ];
-            
-            try {
-                $ch = curl_init();
-                curl_setopt_array($ch, [
-                    CURLOPT_URL => $url,
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_POST => true,
-                    CURLOPT_POSTFIELDS => http_build_query($data),
-                    CURLOPT_TIMEOUT => 30,
-                    CURLOPT_CONNECTTIMEOUT => 10
-                ]);
-                $response = curl_exec($ch);
-                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                $curlError = curl_error($ch);
-                curl_close($ch);
-                
-                // Log para debugging
-                Log::info('WhatsApp API Response', [
-                    'http_code' => $httpCode,
-                    'response' => $response,
-                    'curl_error' => $curlError,
-                    'phone' => "51$phone"
-                ]);
-                
-            } catch (Exception $whatsappError) {
-                // No fallar toda la transacción por un error de WhatsApp
-                Log::error('WhatsApp sending failed', [
-                    'error' => $whatsappError->getMessage(),
-                    'phone' => "51$phone"
-                ]);
-            }
-
-            
             // Actualizar cantidad de cupos en la tabla user_specialization
             $userSpecialization = UserSpecialization::findOrFail($request->id_quota);
             if ($userSpecialization->cupo_doctor > 0) { // Solo decrementa si hay cupos
@@ -124,12 +69,12 @@ class AppointmentController extends Controller
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => true, 
-                    'message' => 'Cita Registrada Correctamente y se mando un mensaje al paciente.',
+                    'message' => 'Cita registrada correctamente.',
                     'appointment_id' => $appointment->id
                 ]);
             }
             // El redirect original solo para envíos de formulario no-AJAX (si los hubiera)
-            return redirect('recisa/appointments/list')->with('success','Cita Registrada y se mando un mensaje al paciente'); 
+            return redirect('recisa/appointments/list')->with('success','Cita registrada correctamente'); 
 
         } catch (ValidationException $e) { // Errores de validación específicos
             DB::rollBack();

@@ -9,6 +9,7 @@
 
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#000000">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <!--Anderson-->
     <link rel="stylesheet" href="{{asset('assets/bootstrap/css/bootstrap.min.css')}}">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i&amp;display=swap">
@@ -88,6 +89,14 @@
     <script src="https://cdn.datatables.net/2.0.3/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/2.0.3/js/dataTables.bootstrap5.js"></script>
     <!--JS tablas-->
+
+    <!--RECISA Offline PWA Scripts-->
+    <script src="{{ asset('js/offline/OfflineDatabase.js') }}"></script>
+    <script src="{{ asset('js/offline/SyncManager.js') }}"></script>
+    <script src="{{ asset('js/offline/RecisaOfflineApp.js') }}"></script>
+    <script src="{{ asset('js/offline/OfflineDataLoader.js') }}"></script>
+    <!--End Offline PWA Scripts-->
+
     @stack('js')
 </body>
 

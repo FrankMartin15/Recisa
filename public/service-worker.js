@@ -1,4 +1,5 @@
-const CACHE_NAME = 'recisa-cache-v1';
+const CACHE_NAME = 'recisa-cache-v2';
+const API_CACHE_NAME = 'recisa-api-cache-v1';
 const STATIC_ASSETS = [
     '/',
     '/manifest.json',
@@ -46,58 +47,256 @@ const STATIC_ASSETS = [
     '/assets/js/mostrar_ocultar.js',
     '/assets/js/scripts.js',
     '/assets/js/Table-With-Search.js',
-    '/assets/js/theme.js'
+    '/assets/js/theme.js',
+    // Offline PWA Scripts
+    '/js/offline/OfflineDatabase.js',
+    '/js/offline/SyncManager.js',
+    '/js/offline/RecisaOfflineApp.js',
+    '/js/offline/OfflineDataLoader.js',
+    // Offline fallback page
+    '/offline.html'
+];
+
+// Páginas que se pueden servir offline
+const OFFLINE_PAGES = [
+    '/admin/dashboard',
+    '/secretary/dashboard',
+    '/doctor/dashboard',
+    '/recisa/patients/list',
+    '/recisa/patients/add',
+    '/recisa/appoitnment/list',
+    '/recisa/appoitnment/add',
+    '/recisa/perfil'
 ];
 
 // Instalar el Service Worker y cachear recursos estáticos
 self.addEventListener('install', (event) => {
-    console.log('Service Worker instalado.');
+    console.log('Service Worker v2 instalando...');
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(STATIC_ASSETS);
+            console.log('Cacheando assets estáticos...');
+            return cache.addAll(STATIC_ASSETS).catch(err => {
+                console.error('Error cacheando assets:', err);
+                // Continuar aunque falle algún asset
+                return Promise.resolve();
+            });
         })
     );
+    // Forzar activación inmediata
+    self.skipWaiting();
 });
 
 // Activar el Service Worker y limpiar caches antiguos
 self.addEventListener('activate', (event) => {
-    console.log('Service Worker activado.');
+    console.log('Service Worker v2 activado.');
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames.map((cache) => {
-                    if (cache !== CACHE_NAME) {
+                    if (cache !== CACHE_NAME && cache !== API_CACHE_NAME) {
                         console.log('Eliminando cache antiguo:', cache);
                         return caches.delete(cache);
                     }
                 })
             );
+        }).then(() => {
+            // Tomar control de todas las páginas inmediatamente
+            return self.clients.claim();
         })
     );
 });
 
 // Interceptar solicitudes y manejar online/offline
 self.addEventListener('fetch', (event) => {
-    if (STATIC_ASSETS.includes(new URL(event.request.url).pathname)) {
-        // Estrategia Cache First para recursos estáticos
+    const url = new URL(event.request.url);
+    const pathname = url.pathname;
+
+    // Ignorar peticiones de Chrome extensions
+    if (url.protocol === 'chrome-extension:') {
+        return;
+    }
+
+    // Estrategia para APIs (/api/*)
+    if (pathname.startsWith('/api/')) {
+        event.respondWith(handleApiRequest(event.request));
+        return;
+    }
+
+    // Estrategia Cache First para recursos estáticos conocidos
+    if (STATIC_ASSETS.includes(pathname)) {
         event.respondWith(
             caches.match(event.request).then((response) => {
-                return response || fetch(event.request);
+                return response || fetch(event.request).then(fetchResponse => {
+                    // Cachear la respuesta
+                    return caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, fetchResponse.clone());
+                        return fetchResponse;
+                    });
+                });
+            }).catch(() => {
+                // Si falla todo, retornar página offline
+                return caches.match('/offline.html');
             })
         );
-    } else {
-        // Estrategia Network First para solicitudes dinámicas
-        event.respondWith(
-            fetch(event.request)
-                .then((response) => {
-                    return caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, response.clone());
-                        return response;
+        return;
+    }
+
+    // Para páginas HTML (navegación)
+    if (event.request.mode === 'navigate' ||
+        (event.request.method === 'GET' && event.request.headers.get('accept').includes('text/html'))) {
+        event.respondWith(handleNavigationRequest(event.request));
+        return;
+    }
+
+    // Network First para todo lo demás
+    event.respondWith(
+        fetch(event.request)
+            .then((response) => {
+                // Cachear respuestas exitosas
+                if (response.status === 200) {
+                    const responseClone = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseClone);
                     });
-                })
-                .catch(() => {
-                    return caches.match(event.request);
-                })
+                }
+                return response;
+            })
+            .catch(() => {
+                return caches.match(event.request);
+            })
+    );
+});
+
+// Manejar peticiones API
+async function handleApiRequest(request) {
+    try {
+        // Intentar red primero
+        const networkResponse = await fetch(request);
+
+        if (networkResponse.ok) {
+            // Cachear respuesta exitosa
+            const cache = await caches.open(API_CACHE_NAME);
+            cache.put(request, networkResponse.clone());
+        }
+
+        return networkResponse;
+    } catch (error) {
+        // Si falla la red, buscar en cache
+        const cachedResponse = await caches.match(request);
+
+        if (cachedResponse) {
+            return cachedResponse;
+        }
+
+        // Si no hay cache, retornar error JSON
+        return new Response(
+            JSON.stringify({
+                success: false,
+                message: 'Sin conexión. Los datos se sincronizarán cuando haya internet.',
+                offline: true
+            }),
+            {
+                status: 503,
+                headers: { 'Content-Type': 'application/json' }
+            }
         );
     }
+}
+
+// Manejar peticiones de navegación (páginas HTML)
+async function handleNavigationRequest(request) {
+    try {
+        // Intentar red primero
+        const networkResponse = await fetch(request);
+
+        if (networkResponse.ok) {
+            // Cachear la página
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(request, networkResponse.clone());
+        }
+
+        return networkResponse;
+    } catch (error) {
+        // Si falla la red, buscar en cache
+        const cachedResponse = await caches.match(request);
+
+        if (cachedResponse) {
+            return cachedResponse;
+        }
+
+        // Si no hay cache de la página específica, retornar página offline
+        return caches.match('/offline.html');
+    }
+}
+
+// Escuchar mensajes del cliente
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
+
+    if (event.data && event.data.type === 'CLEAR_CACHE') {
+        caches.keys().then(cacheNames => {
+            cacheNames.forEach(cacheName => {
+                caches.delete(cacheName);
+            });
+        });
+    }
+
+    if (event.data && event.data.type === 'CACHE_PAGE') {
+        const url = event.data.url;
+        caches.open(CACHE_NAME).then(cache => {
+            cache.add(url);
+        });
+    }
+});
+
+// Background Sync para operaciones pendientes
+self.addEventListener('sync', (event) => {
+    if (event.tag === 'sync-pending-operations') {
+        event.waitUntil(syncPendingOperations());
+    }
+});
+
+async function syncPendingOperations() {
+    // Esta función será llamada cuando vuelva la conexión
+    // La lógica real está en SyncManager.js del lado del cliente
+    console.log('Background sync triggered');
+
+    // Notificar a los clientes que intenten sincronizar
+    const clients = await self.clients.matchAll();
+    clients.forEach(client => {
+        client.postMessage({
+            type: 'SYNC_REQUESTED'
+        });
+    });
+}
+
+// Push notifications (para futuras mejoras)
+self.addEventListener('push', (event) => {
+    if (event.data) {
+        const data = event.data.json();
+
+        const options = {
+            body: data.body || 'Nueva notificación de RECISA',
+            icon: '/assets/img/logo.png',
+            badge: '/assets/img/escudo.png',
+            vibrate: [100, 50, 100],
+            data: {
+                url: data.url || '/'
+            }
+        };
+
+        event.waitUntil(
+            self.registration.showNotification(data.title || 'RECISA', options)
+        );
+    }
+});
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    event.waitUntil(
+        clients.openWindow(event.notification.data.url)
+    );
 });

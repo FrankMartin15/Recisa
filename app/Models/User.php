@@ -29,7 +29,9 @@ class User extends Authenticatable
         'password',
         'image',
         'user_level',
-        'status'
+        'status',
+        'api_token',
+        'token_expires_at'
     ];
 
     /**
@@ -40,6 +42,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'api_token',
     ];
 
     /**
@@ -50,12 +53,19 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'token_expires_at' => 'datetime',
     ];
 
     public function group()
     {
         return $this->belongsTo(UserGroup::class, 'user_level', 'group_level');
     }
+
+    public function userGroup()
+    {
+        return $this->belongsTo(UserGroup::class, 'user_level', 'group_level');
+    }
+
     public function specializations()
     {
         return $this->hasMany(UserSpecialization::class, 'id_user');

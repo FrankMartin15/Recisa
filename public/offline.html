@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RECISA | Sin Conexión</title>
+    <link rel="icon" href="/assets/img/escudo.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#000000">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .offline-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .offline-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .features {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .features h3 {
+            color: #00486E;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .features ul {
+            list-style: none;
+        }
+
+        .features li {
+            padding: 8px 0;
+            color: #555;
+            display: flex;
+            align-items: center;
+        }
+
+        .features li::before {
+            content: "✓";
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .status-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+
+        .status-box.online {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ffc107;
+            margin-right: 8px;
+            animation: blink 1.5s infinite;
+        }
+
+        .status-box.online .status-indicator {
+            background: #28a745;
+            animation: none;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary {
+            background: #00486E;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .pending-count {
+            background: #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .pending-count strong {
+            color: #00486E;
+            font-size: 24px;
+        }
+
+        .logo {
+            width: 80px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 480px) {
+            .offline-container {
+                padding: 25px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+            .actions {
+                flex-direction: column;
+            }
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <img src="/assets/img/logo.png" alt="RECISA Logo" class="logo" onerror="this.style.display='none'">
+        <div class="offline-icon">📡</div>
+        <h1>Sin Conexión a Internet</h1>
+        <p class="subtitle">
+            No te preocupes, RECISA puede seguir funcionando offline.
+            Tus datos se guardarán localmente y se sincronizarán automáticamente cuando vuelva la conexión.
+        </p>
+
+        <div class="status-box" id="statusBox">
+            <span class="status-indicator"></span>
+            <span id="statusText">Esperando conexión...</span>
+        </div>
+
+        <div class="features">
+            <h3>Funcionalidades disponibles offline:</h3>
+            <ul>
+                <li>Ver lista de pacientes guardados</li>
+                <li>Crear nuevos pacientes (se sincronizarán después)</li>
+                <li>Ver citas programadas</li>
+                <li>Crear nuevas citas (se sincronizarán después)</li>
+                <li>Ver información de doctores</li>
+                <li>Acceder al dashboard con datos locales</li>
+            </ul>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" onclick="goBack()">
+                ← Volver Atrás
+            </button>
+            <button class="btn btn-secondary" onclick="tryReconnect()">
+                🔄 Reintentar Conexión
+            </button>
+            <button class="btn btn-success" onclick="goToDashboard()" style="display:none" id="dashboardBtn">
+                📊 Ir al Dashboard
+            </button>
+        </div>
+
+        <div class="pending-count" id="pendingInfo" style="display:none">
+            <p>Operaciones pendientes de sincronización:</p>
+            <strong id="pendingNumber">0</strong>
+        </div>
+    </div>
+
+    <script>
+        // Verificar estado de conexión
+        function checkConnection() {
+            const statusBox = document.getElementById('statusBox');
+            const statusText = document.getElementById('statusText');
+            const dashboardBtn = document.getElementById('dashboardBtn');
+
+            if (navigator.onLine) {
+                statusBox.classList.add('online');
+                statusText.textContent = '¡Conexión restaurada! Redirigiendo...';
+                dashboardBtn.style.display = 'inline-block';
+
+                // Redirigir automáticamente después de 2 segundos
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                statusBox.classList.remove('online');
+                statusText.textContent = 'Sin conexión a internet';
+                dashboardBtn.style.display = 'none';
+            }
+        }
+
+        // Verificar operaciones pendientes
+        async function checkPendingOperations() {
+            if (window.indexedDB) {
+                try {
+                    const request = indexedDB.open('recisa_offline_db', 1);
+                    request.onsuccess = (event) => {
+                        const db = event.target.result;
+                        if (db.objectStoreNames.contains('sync_queue')) {
+                            const transaction = db.transaction(['sync_queue'], 'readonly');
+                            const store = transaction.objectStore('sync_queue');
+                            const countRequest = store.count();
+
+                            countRequest.onsuccess = () => {
+                                const count = countRequest.result;
+                                if (count > 0) {
+                                    document.getElementById('pendingInfo').style.display = 'block';
+                                    document.getElementById('pendingNumber').textContent = count;
+                                }
+                            };
+                        }
+                    };
+                } catch (e) {
+                    console.log('IndexedDB no disponible');
+                }
+            }
+        }
+
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/';
+            }
+        }
+
+        function tryReconnect() {
+            const statusText = document.getElementById('statusText');
+            statusText.textContent = 'Verificando conexión...';
+
+            // Intentar hacer una petición simple
+            fetch('/manifest.json', { cache: 'no-store' })
+                .then(response => {
+                    if (response.ok) {
+                        checkConnection();
+                    } else {
+                        statusText.textContent = 'Sin conexión a internet';
+                    }
+                })
+                .catch(() => {
+                    statusText.textContent = 'Sin conexión a internet';
+                });
+        }
+
+        function goToDashboard() {
+            // Intentar ir al dashboard según el rol guardado
+            const lastUrl = sessionStorage.getItem('lastUrl') || '/';
+            window.location.href = lastUrl;
+        }
+
+        // Listeners
+        window.addEventListener('online', checkConnection);
+        window.addEventListener('offline', checkConnection);
+
+        // Verificar al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            checkConnection();
+            checkPendingOperations();
+
+            // Guardar última URL visitada
+            if (document.referrer) {
+                sessionStorage.setItem('lastUrl', document.referrer);
+            }
+        });
+
+        // Verificar periódicamente
+        setInterval(checkConnection, 5000);
+    </script>
+</body>
+</html>

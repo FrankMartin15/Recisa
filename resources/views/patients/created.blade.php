@@ -301,6 +301,8 @@
 
         // 🔌 INTERCEPTAR ENVÍO DEL FORMULARIO
         $('#patientForm').on('submit', function(e) {
+            e.preventDefault(); // ✅ SIEMPRE prevenir submit por defecto
+
             // Usar el Offline Manager global (maneja online y offline)
             if (window.recisaOffline && typeof window.recisaOffline.processForm === 'function') {
                 window.recisaOffline.processForm(e);
@@ -312,7 +314,8 @@
                     }, 500);
                 }
             } else {
-                console.error('Error: Offline Manager no cargado');
+                console.error('Error: Offline Manager no cargado - El formulario no se puede enviar');
+                showModal('Error: Sistema offline no disponible. Recarga la página.', 'error');
             }
         });
 

@@ -39,7 +39,92 @@ class AppointmentController extends Controller
         return view('appointments.created',compact('quotas','patients','today','doctors','hour'));
     }
 
-    public function insert(StoreApointment $request){ // StoreApointment ya maneja la validación
+    public function insert(Request $request){
+        // --- LÓGICA DE SINCRONIZACIÓN OFFLINE ---
+        if ($request->has('_offline_sync')) {
+            try {
+                Log::info('🔧 Cita recibida para sincronización offline:', $request->all());
+
+                // Validación manual simplificada para offline
+                $validated = $request->validate([
+                    'id_quota' => 'required|integer|exists:user_specialization,id',
+                    'id_patient' => 'required|integer|exists:patients,id',
+                    'date' => 'required|date',
+                    'time' => 'required', // No validamos formato estricto ni duplicados aquí
+                ]);
+
+                DB::beginTransaction();
+
+                // Verificar duplicados manualmente para evitar error 500 si ya existe
+                $exists = Appointment::where('id_quota', $request->id_quota)
+                    ->where('date', $request->date)
+                    ->where('time', $request->time)
+                    ->exists();
+
+                if ($exists) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => true, // Retornamos true para que el cliente borre la petición de la cola
+                        'message' => 'La cita ya existía (sincronizada previamente).',
+                        'was_duplicate' => true
+                    ]);
+                }
+
+                $appointment = new Appointment();
+                $appointment->fill([
+                     'id_quota' => $request->id_quota,
+                     'id_patient' => $request->id_patient,
+                     'date' => $request->date,
+                     'time' => $request->time,
+                     'description' => $request->description ?? null,
+                     'status' => 0
+                ]);
+                $appointment->save();
+
+                // Actualizar cupos
+                $userSpecialization = UserSpecialization::findOrFail($request->id_quota);
+                if ($userSpecialization->cupo_doctor > 0) {
+                    $userSpecialization->cupo_doctor -= 1;
+                    $userSpecialization->save();
+                }
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Cita sincronizada correctamente.',
+                    'appointment_id' => $appointment->id
+                ]);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('❌ Error sincronizando cita:', ['error' => $e->getMessage()]);
+                return response()->json(['success' => false, 'message' => 'Error interno: ' . $e->getMessage()], 500);
+            }
+        }
+
+        // --- LÓGICA NORMAL (ONLINE) ---
+        // Usamos validación manual aquí también para reemplazar StoreApointment
+        $request->validate([
+            'id_quota' => [
+                'required',
+                'integer',
+                'exists:user_specialization,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    $appointment = Appointment::where('id_quota', $value)
+                        ->where('date', $request->date)
+                        ->where('time', $request->time)
+                        ->first();
+                    if ($appointment) {
+                        $fail('Ya existe una cita para este horario.');
+                    }
+                },
+            ],
+            'id_patient' => 'required|integer|exists:patients,id',
+            'date' => 'required|date',
+            'time' => 'required|date_format:H:i',
+        ]);
+
         try {
             DB::beginTransaction();
             
@@ -59,9 +144,6 @@ class AppointmentController extends Controller
             if ($userSpecialization->cupo_doctor > 0) { // Solo decrementa si hay cupos
                 $userSpecialization->cupo_doctor -= 1;
                 $userSpecialization->save();
-            } else {
-                // Opcional: Manejar caso donde el cupo ya era 0 (podría pasar si hubo un submit offline y otro online casi al mismo tiempo)
-                // Por ahora, la validación en StoreApointment debería prevenir esto en la mayoría de los casos si se actualiza la UI.
             }
 
             DB::commit();

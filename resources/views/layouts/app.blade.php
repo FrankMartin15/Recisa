@@ -9,7 +9,7 @@
     <link rel="icon" href="{{ asset('assets/img/escudo.png') }}">
 
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#00476D">
     
     <!--Anderson-->
     <link rel="stylesheet" href="{{asset('assets/bootstrap/css/bootstrap.min.css')}}">
@@ -87,83 +87,15 @@
     
     @stack('js')
     
-    {{-- 🔧 SERVICE WORKER ÚNICO Y SIMPLIFICADO --}}
+    {{-- 🔧 SERVICE WORKER REGISTRATION --}}
     <script>
-    // ⭐ REGISTRO DEL SERVICE WORKER CORRECTO
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register('/service-worker.js', {
-                scope: '/'
-            })
-            .then(function(registration) {
-                console.log('✅ Service Worker registrado correctamente:', registration.scope);
-                
-                // Manejar actualizaciones del SW de forma simple
-                registration.addEventListener('updatefound', () => {
-                    const newWorker = registration.installing;
-                    if (newWorker) {
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                console.log('🔄 Nueva versión del Service Worker disponible');
-                                // Recargar automáticamente después de 3 segundos
-                                setTimeout(() => {
-                                    window.location.reload();
-                                }, 3000);
-                            }
-                        });
-                    }
-                });
-            })
-            .catch(function(error) {
-                console.warn('⚠️ Error al registrar Service Worker:', error);
-                // No es crítico, la app puede funcionar sin SW
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
+                    .catch(err => console.error('⚠️ Error SW:', err));
             });
-        });
-
-        // Escuchar mensajes del Service Worker (simplificado)
-        navigator.serviceWorker.addEventListener('message', function(event) {
-            if (event.data && event.data.type === 'RELOAD_PAGE') {
-                window.location.reload();
-            }
-        });
-    } else {
-        console.info('ℹ️ Service Workers no soportados en este navegador');
-    }
-
-    // ⭐ CSRF TOKEN REFRESH SIMPLIFICADO
-    window.addEventListener('online', () => {
-        console.log('🌐 Conexión restaurada, actualizando CSRF token...');
-        
-        // Solo intentar si realmente hay conexión
-        fetch('/csrf-token', {
-            method: 'GET',
-            cache: 'no-cache',
-            credentials: 'same-origin'
-        })
-        .then(response => response.ok ? response.json() : null)
-        .then(data => {
-            if (data && data.token) {
-                // Actualizar meta tag
-                const csrfMetaTag = document.querySelector('meta[name="csrf-token"]');
-                if (csrfMetaTag) {
-                    csrfMetaTag.setAttribute('content', data.token);
-                }
-
-                // Actualizar inputs de formularios
-                document.querySelectorAll('input[name="_token"]').forEach(input => {
-                    input.value = data.token;
-                });
-
-                console.log('✅ Token CSRF actualizado');
-            }
-        })
-        .catch(error => {
-            console.log('⚠️ No se pudo actualizar el token CSRF:', error.message);
-        });
-    });
-
-    // ⭐ VARIABLE DE ESTADO DEL SERVIDOR (simplificada)
-    window.serverOnline = @json($serverOnline ?? true);
+        }
     </script>
 </body>
 

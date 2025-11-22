@@ -1,297 +1,139 @@
-// // public/service-worker.js - VERSIÓN SIN ERRORES DE ASSETS
+const CACHE_VERSION = 'recisa-v4-offline-complete';
+const CACHE_STATIC = 'recisa-static-v4';
+const CACHE_DYNAMIC = 'recisa-dynamic-v4';
+const CACHE_API = 'recisa-api-v4';
 
-// const CACHE_VERSION = 'recisa-fixed-v2';
-// const CACHE_NAME = `${CACHE_VERSION}`;
+// Assets that are absolutely required for the app shell
+const STATIC_ASSETS = [
+    '/',
+    '/offline',
+    '/assets/img/logo.png',
+    '/assets/img/escudo.png',
+    '/manifest.json',
+    '/assets/js/offline-manager.js',
+    // Critical CSS
+    '/assets/bootstrap/css/bootstrap.min.css',
+    '/assets/css/google-fonts-nunito.css',
+    '/assets/css/google-fonts-roboto.css',
+    '/assets/fonts/fontawesome-all.min.css',
+    '/assets/fonts/font-awesome.min.css',
+    '/assets/css/dataTables.bootstrap5.css',
+    '/assets/css/dataTables.bootstrap.min.css',
+    '/assets/css/menu_bar.css',
+    '/assets/css/FORM.css',
+    // Critical JS
+    '/assets/js/jquery-3.7.1.js',
+    '/assets/js/bootstrap.bundle.min.js',
+    '/assets/js/dataTables.js',
+    '/assets/js/dataTables.bootstrap5.js',
+    '/assets/js/jquery.dataTables.min.js',
+    '/assets/js/dataTables.bootstrap.min.js',
+    '/assets/js/menu_bar.js'
+];
 
-// console.log(`[SW] Service Worker ${CACHE_VERSION} iniciado`);
+// Install Event: Cache Static Assets
+self.addEventListener('install', (event) => {
+    console.log(`[SW] Installing Service Worker ${CACHE_VERSION}`);
+    event.waitUntil(
+        caches.open(CACHE_STATIC)
+            .then(cache => {
+                console.log('[SW] Caching App Shell');
+                return cache.addAll(STATIC_ASSETS);
+            })
+            .then(() => self.skipWaiting())
+    );
+});
 
-// // Assets esenciales mínimos (solo los que SABEMOS que existen)
-// const STATIC_ASSETS = [
-//     '/',
-//     '/connectivity-check'
-// ];
+// Activate Event: Clean up old caches
+self.addEventListener('activate', (event) => {
+    console.log(`[SW] Activating Service Worker ${CACHE_VERSION}`);
+    event.waitUntil(
+        caches.keys().then(keys => {
+            return Promise.all(
+                keys.map(key => {
+                    if (key !== CACHE_STATIC && key !== CACHE_DYNAMIC && key !== CACHE_API) {
+                        console.log('[SW] Removing old cache', key);
+                        return caches.delete(key);
+                    }
+                })
+            );
+        }).then(() => self.clients.claim())
+    );
+});
 
-// // INSTALACIÓN SIMPLIFICADA
-// self.addEventListener('install', (event) => {
-//     console.log(`[SW INSTALL] Instalando ${CACHE_NAME}`);
-//     event.waitUntil(
-//         caches.open(CACHE_NAME)
-//             .then(cache => {
-//                 console.log(`[SW INSTALL] Cache ${CACHE_NAME} abierto`);
-                
-//                 // Intentar cachear assets sin fallar si no existen
-//                 return Promise.allSettled(
-//                     STATIC_ASSETS.map(url => 
-//                         cache.add(url).catch(error => {
-//                             console.warn(`[SW INSTALL] Asset no disponible: ${url}`);
-//                             return null;
-//                         })
-//                     )
-//                 );
-//             })
-//             .then(() => {
-//                 console.log(`[SW INSTALL] Instalación completada`);
-//             })
-//     );
-    
-//     self.skipWaiting();
-// });
+// Helper: Network First (for API and HTML navigation)
+// Tries network, if fails, tries cache. If both fail, returns offline page (for nav) or error.
+const networkFirst = async (request, cacheName) => {
+    try {
+        const response = await fetch(request);
+        if (response.ok) {
+            const cache = await caches.open(cacheName);
+            cache.put(request, response.clone());
+        }
+        return response;
+    } catch (error) {
+        const cachedResponse = await caches.match(request);
+        if (cachedResponse) {
+            return cachedResponse;
+        }
+        // Fallback for navigation
+        if (request.mode === 'navigate') {
+            // Try to find the cached offline page
+            const offlinePage = await caches.match('/offline');
+            if (offlinePage) return offlinePage;
 
-// // ACTIVACIÓN
-// self.addEventListener('activate', (event) => {
-//     console.log(`[SW ACTIVATE] Activando ${CACHE_NAME}`);
-//     event.waitUntil(
-//         caches.keys().then(keys => {
-//             return Promise.all(
-//                 keys
-//                     .filter(key => key.startsWith('recisa-') && key !== CACHE_NAME)
-//                     .map(key => {
-//                         console.log(`[SW ACTIVATE] Eliminando cache: ${key}`);
-//                         return caches.delete(key);
-//                     })
-//             );
-//         }).then(() => {
-//             console.log('[SW ACTIVATE] Activación completada');
-//             return self.clients.claim();
-//         })
-//     );
-// });
+            // Try to find a cached HTML page (home)
+            const cachedHtml = await caches.match('/');
+            if (cachedHtml) return cachedHtml;
+        }
+        throw error;
+    }
+};
 
-// // MANEJO DE FETCH ULTRA SIMPLIFICADO
-// self.addEventListener('fetch', (event) => {
-//     const request = event.request;
-//     const url = new URL(request.url);
+// Helper: Stale While Revalidate (for Assets: JS, CSS, Images)
+// Returns cache immediately, then updates cache from network in background.
+const staleWhileRevalidate = async (request, cacheName) => {
+    const cache = await caches.open(cacheName);
+    const cachedResponse = await cache.match(request);
 
-//     // Ignorar peticiones que no son del mismo origen
-//     if (url.origin !== self.location.origin) {
-//         return;
-//     }
-//     if (request.method !== 'GET') {
-//         // Ignoramos la petición y no hacemos nada. El navegador la manejará normalmente.
-//         return;
-//     }
+    const fetchPromise = fetch(request).then(networkResponse => {
+        if (networkResponse.ok) {
+            cache.put(request, networkResponse.clone());
+        }
+        return networkResponse;
+    }).catch(() => {
+        // Network failed, nothing to do if we have cache
+    });
 
-//     // MANEJO ESPECIAL PARA CONNECTIVITY CHECK
-//     if (url.pathname === '/connectivity-check') {
-//         event.respondWith(
-//             fetch(request)
-//                 .then(response => response)
-//                 .catch(() => {
-//                     return new Response(JSON.stringify({
-//                         status: 'offline',
-//                         server_time: new Date().toISOString(),
-//                         connection: 'unavailable'
-//                     }), {
-//                         status: 503,
-//                         headers: { 'Content-Type': 'application/json' }
-//                     });
-//                 })
-//         );
-//         return;
-//     }
+    return cachedResponse || fetchPromise;
+};
 
-//     // MANEJO ESPECIAL PARA UPDATE CONNECTION STATUS
-//     if (url.pathname === '/update-connection-status') {
-//         event.respondWith(
-//             fetch(request)
-//                 .then(response => response)
-//                 .catch(() => {
-//                     return new Response(JSON.stringify({
-//                         message: 'Status update queued (offline)'
-//                     }), {
-//                         status: 200,
-//                         headers: { 'Content-Type': 'application/json' }
-//                     });
-//                 })
-//         );
-//         return;
-//     }
+// Fetch Event
+self.addEventListener('fetch', (event) => {
+    const request = event.request;
+    const url = new URL(request.url);
 
-//     // PARA NAVEGACIÓN (documentos HTML)
-//     if (request.mode === 'navigate' || 
-//         (request.method === 'GET' && request.headers.get('accept') && request.headers.get('accept').includes('text/html'))) {
-        
-//         event.respondWith(
-//             fetch(request)
-//                 .then(response => {
-//                     // Si la respuesta es buena, cachear para uso futuro
-//                     if (response.ok) {
-//                         const responseToCache = response.clone();
-//                         caches.open(CACHE_NAME).then(cache => {
-//                             cache.put(request, responseToCache).catch(() => {
-//                                 // Ignorar errores de caché
-//                             });
-//                         }).catch(() => {
-//                             // Ignorar errores de caché
-//                         });
-//                     }
-//                     return response;
-//                 })
-//                 .catch(() => {
-//                     // Error de red - intentar servir desde caché
-//                     return caches.match(request).then(cachedResponse => {
-//                         if (cachedResponse) {
-//                             return cachedResponse;
-//                         }
-                        
-//                         // Página offline
-//                         return new Response(`
-//                             <!DOCTYPE html>
-//                             <html>
-//                             <head>
-//                                 <title>Sin Conexión - RECISA</title>
-//                                 <meta charset="utf-8">
-//                                 <meta name="viewport" content="width=device-width, initial-scale=1">
-//                                 <style>
-//                                     body { 
-//                                         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; 
-//                                         text-align: center; 
-//                                         padding: 50px; 
-//                                         background: #f8f9fa;
-//                                         margin: 0;
-//                                     }
-//                                     .offline-container {
-//                                         max-width: 400px;
-//                                         margin: 0 auto;
-//                                         background: white;
-//                                         padding: 40px;
-//                                         border-radius: 10px;
-//                                         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-//                                     }
-//                                     .offline-icon { font-size: 48px; margin-bottom: 20px; }
-//                                     .offline-title { color: #333; margin-bottom: 15px; }
-//                                     .offline-message { color: #666; margin-bottom: 25px; }
-//                                     .retry-btn {
-//                                         background: #00476D;
-//                                         color: white;
-//                                         border: none;
-//                                         padding: 12px 24px;
-//                                         border-radius: 5px;
-//                                         cursor: pointer;
-//                                         font-size: 16px;
-//                                     }
-//                                     .retry-btn:hover { background: #003556; }
-//                                 </style>
-//                             </head>
-//                             <body>
-//                                 <div class="offline-container">
-//                                     <div class="offline-icon">📱</div>
-//                                     <h1 class="offline-title">Modo Offline</h1>
-//                                     <p class="offline-message">
-//                                         No hay conexión a internet.<br>
-//                                         La aplicación funcionará con datos locales.
-//                                     </p>
-//                                     <button class="retry-btn" onclick="window.location.reload()">
-//                                         🔄 Intentar de nuevo
-//                                     </button>
-//                                 </div>
-//                             </body>
-//                             </html>
-//                         `, {
-//                             status: 200,
-//                             headers: { 'Content-Type': 'text/html; charset=utf-8' }
-//                         });
-//                     });
-//                 })
-//         );
-//         return;
-//     }
+    // Ignore non-GET requests (POST/PUT/DELETE handled by offline-manager.js)
+    if (request.method !== 'GET') return;
 
-//     // PARA ASSETS (CSS, JS, imágenes) - Strategy: Network First con silent fallback
-//     if (request.method === 'GET') {
-//         event.respondWith(
-//             fetch(request)
-//                 .then(response => {
-//                     // Si la respuesta es buena, cachear
-//                     if (response.ok) {
-//                         const responseToCache = response.clone();
-//                         caches.open(CACHE_NAME).then(cache => {
-//                             cache.put(request, responseToCache).catch(() => {
-//                                 // Ignorar errores de caché silenciosamente
-//                             });
-//                         }).catch(() => {
-//                             // Ignorar errores de caché silenciosamente
-//                         });
-//                     }
-//                     return response;
-//                 })
-//                 .catch(() => {
-//                     // Error de red - intentar servir desde caché
-//                     return caches.match(request).then(cachedResponse => {
-//                         if (cachedResponse) {
-//                             return cachedResponse;
-//                         }
-                        
-//                         // ✅ PARA ASSETS NO ENCONTRADOS: NO THROW ERROR
-//                         // Simplemente devolver una respuesta vacía apropiada
-                        
-//                         if (request.url.includes('.js')) {
-//                             return new Response('// Asset no disponible offline', {
-//                                 status: 200,
-//                                 headers: { 'Content-Type': 'application/javascript' }
-//                             });
-//                         }
-                        
-//                         if (request.url.includes('.css')) {
-//                             return new Response('/* Asset no disponible offline */', {
-//                                 status: 200,
-//                                 headers: { 'Content-Type': 'text/css' }
-//                             });
-//                         }
-                        
-//                         if (request.url.includes('.jpg') || request.url.includes('.png') || request.url.includes('.gif')) {
-//                             // Para imágenes, devolver un 404 silencioso
-//                             return new Response('', {
-//                                 status: 404,
-//                                 statusText: 'Not Found'
-//                             });
-//                         }
-                        
-//                         // Para otros assets, devolver respuesta vacía
-//                         return new Response('', {
-//                             status: 200,
-//                             headers: { 'Content-Type': 'text/plain' }
-//                         });
-//                     });
-//                 })
-//         );
-//         return;
-//     }
+    // Ignore different origin
+    if (url.origin !== self.location.origin) return;
 
-//     // Para métodos que no son GET (POST, PUT, etc.), dejar que pasen directamente
-//     // El offline-manager.js manejará estos casos
-// });
+    // 1. API Requests -> Network First (Cache API responses for offline viewing)
+    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/dashboard') || url.pathname === '/') {
+        event.respondWith(networkFirst(request, CACHE_API));
+        return;
+    }
 
-// // MANEJO DE MENSAJES
-// self.addEventListener('message', (event) => {
-//     console.log('[SW MESSAGE]', event.data);
-    
-//     if (event.data && event.data.type === 'SKIP_WAITING') {
-//         self.skipWaiting();
-//     }
-    
-//     if (event.data && event.data.type === 'GET_CACHE_STATUS') {
-//         caches.keys().then(cacheNames => {
-//             event.ports[0].postMessage({
-//                 type: 'CACHE_STATUS',
-//                 caches: cacheNames,
-//                 currentVersion: CACHE_VERSION
-//             });
-//         });
-//     }
-// });
+    // 2. Static Assets (JS, CSS, Images, Fonts) -> Stale While Revalidate
+    if (request.destination === 'script' ||
+        request.destination === 'style' ||
+        request.destination === 'image' ||
+        request.destination === 'font') {
+        event.respondWith(staleWhileRevalidate(request, CACHE_STATIC));
+        return;
+    }
 
-// // ✅ MANEJO DE ERRORES SIN THROW
-// self.addEventListener('error', (event) => {
-//     console.warn('[SW ERROR]', event.error);
-//     // No propagar el error
-//     event.preventDefault();
-// });
-
-// self.addEventListener('unhandledrejection', (event) => {
-//     console.warn('[SW UNHANDLED REJECTION]', event.reason);
-//     // ✅ PREVENIR que el error se propague y cause problemas
-//     event.preventDefault();
-// });
-
-// console.log(`[SW] Service Worker ${CACHE_VERSION} listo`);
+    // 3. Default -> Network First
+    event.respondWith(networkFirst(request, CACHE_DYNAMIC));
+});

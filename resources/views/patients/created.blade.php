@@ -49,7 +49,7 @@
                             </button>
                         </div>
                     </div>
-                    <form action="" method="POST">
+                    <form action="{{ route('patients.store') }}" method="POST" id="patientForm">
                         @csrf
                         <div class="row g-3">
                             <div class="col-md-2">
@@ -70,7 +70,7 @@
                             <div class="col-md-3">
                                 <label for="phone" class="form-label">Número Historial:</label>
                                 <input class="form-control" maxlength="10" minlength="10" type="text"
-                                    name="history_number" id="history_number" value="{{ old('history_number') }}">
+                                     name="history_number" id="history_number" value="{{ old('history_number') }}">
                             </div>
                             <div class="col-md-2">
                                 <label for="phone" class="form-label">Celular:</label>
@@ -112,6 +112,23 @@
             
             if (!dni) {
                 showModal('Por favor, ingrese el DNI', 'error');
+                return;
+            }
+
+            // 🔌 VERIFICACIÓN OFFLINE
+            if (!navigator.onLine) {
+                console.log('Modo Offline detectado');
+                $('#dni').val(dni);
+                $('#documento').val('');
+                
+                // Habilitar campos para registro manual
+                $('#surnames').prop('readonly', false).attr('placeholder', 'Ingrese apellidos manualmente');
+                $('#names').prop('readonly', false).attr('placeholder', 'Ingrese nombres manualmente');
+                $('#dni').prop('readonly', false); // Ahora editable
+                $('#history_number').prop('readonly', false); // Asegurar que sea editable
+                
+                $('#names').focus();
+                showModal('Modo Offline: Todos los campos habilitados', 'info');
                 return;
             }
 
@@ -170,6 +187,21 @@
                 error: function(xhr, status, error) {
                     console.log('Error completo:', xhr.responseText);
                     
+                    // 🔌 FALLBACK PARA ERROR DE CONEXIÓN (status 0)
+                    if (xhr.status === 0 || status === 'timeout') {
+                        $('#dni').val(dni);
+                        $('#documento').val('');
+                        
+                        // Habilitar campos para registro manual
+                        $('#surnames').prop('readonly', false).attr('placeholder', 'Ingrese apellidos manualmente');
+                        $('#names').prop('readonly', false).attr('placeholder', 'Ingrese nombres manualmente');
+                        $('#dni').prop('readonly', true);
+                        
+                        $('#names').focus();
+                        showModal('Sin conexión a RENIEC. Ingrese datos manualmente.', 'warning');
+                        return;
+                    }
+
                     if (xhr.status === 404) {
                         // DNI no encontrado - intentar activar modo manual
                         try {
@@ -195,8 +227,6 @@
                         showModal('DNI inválido o respuesta incorrecta del servidor', 'error');
                     } else if (xhr.status === 500) {
                         showModal('Error del servidor. Inténtelo nuevamente', 'error');
-                    } else if (status === 'timeout') {
-                        showModal('Tiempo de espera agotado. Verifique su conexión', 'error');
                     } else {
                         showModal('Error de conexión. Inténtelo nuevamente', 'error');
                     }
@@ -268,5 +298,58 @@
         $('#names, #surnames').on('blur', function() {
             this.value = this.value.replace(/\s+/g, ' ').trim();
         });
+
+        // 🔌 INTERCEPTAR ENVÍO DEL FORMULARIO
+        $('#patientForm').on('submit', function(e) {
+            if (!navigator.onLine) {
+                e.preventDefault(); // 🛑 DETENER EL ENVÍO NORMAL
+                console.log('Interceptando envío offline...');
+                
+                // Usar el Offline Manager global
+                if (window.recisaOffline) {
+                    window.recisaOffline.processForm(this);
+                    
+                    // Limpiar formulario visualmente
+                    this.reset();
+                    limpiarFormulario();
+                } else {
+                    alert('Error: Offline Manager no cargado');
+                }
+            }
+        });
+
+        // ⭐ LÓGICA GLOBAL DE ESTADO OFFLINE (NUEVO)
+        function checkOfflineState() {
+            if (!navigator.onLine) {
+                console.log('⚡ Detectado modo offline al cargar/cambiar estado');
+                // Habilitar campos inmediatamente
+                $('#dni, #names, #surnames, #history_number').prop('readonly', false);
+                $('#names').attr('placeholder', 'Ingrese nombres manualmente');
+                $('#surnames').attr('placeholder', 'Ingrese apellidos manualmente');
+                
+                // Deshabilitar búsqueda
+                $('#buscar').prop('disabled', true).html('<i class="fas fa-wifi-slash"></i> Offline');
+                $('#documento').prop('disabled', true).attr('placeholder', 'Búsqueda no disponible offline');
+                
+                if (window.recisaOffline?.showAlert) {
+                    window.recisaOffline.showAlert('offline', 'Modo Offline', 'Campos habilitados para registro manual.');
+                }
+            } else {
+                // Restaurar estado online (solo si los campos están vacíos para no borrar datos ingresados)
+                if ($('#names').val() === '') {
+                    $('#dni, #names, #surnames').prop('readonly', true);
+                }
+                $('#buscar').prop('disabled', false).html('<i class="fas fa-search"></i> Buscar');
+                $('#documento').prop('disabled', false).attr('placeholder', 'Ingrese el DNI');
+            }
+        }
+
+        // Verificar al cargar
+        checkOfflineState();
+
+        // Listeners de conexión
+        window.addEventListener('online', checkOfflineState);
+        window.addEventListener('offline', checkOfflineState);
+
     </script>
 @endpush

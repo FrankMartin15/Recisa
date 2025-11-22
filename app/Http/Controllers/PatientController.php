@@ -54,6 +54,19 @@ class PatientController extends Controller
                 Log::info('✅ Datos validados (offline):', $validated);
 
                 // --- CAMBIO MÍNIMO Y CRUCIAL (OFFLINE) ---
+                // Verificar si ya existe por DNI
+                $existingPatient = Patient::where('dni', $validated['dni'])->first();
+
+                if ($existingPatient) {
+                    Log::info('⚠️ Paciente ya existe (offline sync), retornando ID existente:', ['dni' => $validated['dni'], 'id' => $existingPatient->id]);
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Paciente ya existía (sincronizado).',
+                        'patient_id' => $existingPatient->id,
+                        'was_duplicate' => true
+                    ]);
+                }
+
                 $patientData = [
                     'dni' => $validated['dni'],
                     'names' => $validated['names'],

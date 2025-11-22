@@ -247,6 +247,31 @@
 
 <script>
 $(document).ready(function() {
+    // ⭐ HABILITAR/DESHABILITAR CAMPO FECHA SEGÚN MODO OFFLINE
+    function actualizarCampoFechaSegunConexion() {
+        const isOnline = navigator.onLine;
+        const dateField = $('#date');
+
+        if (!isOnline) {
+            // Modo offline: habilitar campo fecha
+            dateField.prop('readonly', false);
+            dateField.addClass('border-warning');
+            dateField.attr('title', 'Campo editable en modo offline');
+        } else {
+            // Modo online: mantener readonly
+            dateField.prop('readonly', true);
+            dateField.removeClass('border-warning');
+            dateField.removeAttr('title');
+        }
+    }
+
+    // Ejecutar al cargar la página
+    actualizarCampoFechaSegunConexion();
+
+    // Listeners para cambios de conexión
+    window.addEventListener('online', actualizarCampoFechaSegunConexion);
+    window.addEventListener('offline', actualizarCampoFechaSegunConexion);
+
     // ⭐ GUARDAR DATOS ORIGINALES
     const originalQuotaOptions = $('#id_quota').html();
     const originalPatientOptions = $('#id_patient').html();
@@ -558,14 +583,6 @@ $(document).ready(function() {
             restaurarSelectPickersCompleto();
         }
     }, 15000);
-
-    // Verificar conexión inicial
-    setTimeout(() => {
-        if (!navigator.onLine && window.recisaOffline?.showAlert) {
-            window.recisaOffline.showAlert('offline', 'Modo Offline', 
-                'Trabajando sin conexión. Los datos se guardarán localmente.');
-        }
-    }, 1000);
 });
 </script>
 @endpush

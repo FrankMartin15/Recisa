@@ -112,8 +112,27 @@ class PatientController extends Controller
 
             $patient = Patient::create($patientData);
 
+            // Si es petición AJAX, retornar JSON
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Paciente ' . $patient->names . ' registrado exitosamente',
+                    'patient_id' => $patient->id,
+                    'redirect' => url('recisa/patients/list')
+                ]);
+            }
+
+            // Si es petición normal, hacer redirect
             return redirect('recisa/patients/list')->with('success', 'Paciente ' . $patient->names . ' registrado exitosamente');
         } catch (\Exception $e) {
+            // Si es petición AJAX, retornar JSON de error
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al registrar paciente: ' . $e->getMessage()
+                ], 500);
+            }
+
             return redirect()->back()->withErrors(['error' => 'Error al registrar paciente: ' . $e->getMessage()]);
         }
     }

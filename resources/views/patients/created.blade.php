@@ -301,20 +301,18 @@
 
         // 🔌 INTERCEPTAR ENVÍO DEL FORMULARIO
         $('#patientForm').on('submit', function(e) {
-            if (!navigator.onLine) {
-                e.preventDefault(); // 🛑 DETENER EL ENVÍO NORMAL
-                console.log('Interceptando envío offline...');
-                
-                // Usar el Offline Manager global
-                if (window.recisaOffline) {
-                    window.recisaOffline.processForm(this);
-                    
-                    // Limpiar formulario visualmente
-                    this.reset();
-                    limpiarFormulario();
-                } else {
-                    alert('Error: Offline Manager no cargado');
+            // Usar el Offline Manager global (maneja online y offline)
+            if (window.recisaOffline && typeof window.recisaOffline.processForm === 'function') {
+                window.recisaOffline.processForm(e);
+
+                // Limpiar formulario visualmente solo si offline
+                if (!navigator.onLine) {
+                    setTimeout(() => {
+                        limpiarFormulario();
+                    }, 500);
                 }
+            } else {
+                console.error('Error: Offline Manager no cargado');
             }
         });
 

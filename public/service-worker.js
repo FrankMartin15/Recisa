@@ -1,12 +1,11 @@
-const CACHE_VERSION = 'recisa-v4-offline-complete';
-const CACHE_STATIC = 'recisa-static-v4';
-const CACHE_DYNAMIC = 'recisa-dynamic-v4';
-const CACHE_API = 'recisa-api-v4';
+const CACHE_VERSION = 'recisa-v5-no-offline-redirect';
+const CACHE_STATIC = 'recisa-static-v5';
+const CACHE_DYNAMIC = 'recisa-dynamic-v5';
+const CACHE_API = 'recisa-api-v5';
 
 // Assets that are absolutely required for the app shell
 const STATIC_ASSETS = [
     '/',
-    '/offline',
     '/assets/img/logo.png',
     '/assets/img/escudo.png',
     '/manifest.json',
@@ -76,16 +75,8 @@ const networkFirst = async (request, cacheName) => {
         if (cachedResponse) {
             return cachedResponse;
         }
-        // Fallback for navigation
-        if (request.mode === 'navigate') {
-            // Try to find the cached offline page
-            const offlinePage = await caches.match('/offline');
-            if (offlinePage) return offlinePage;
-
-            // Try to find a cached HTML page (home)
-            const cachedHtml = await caches.match('/');
-            if (cachedHtml) return cachedHtml;
-        }
+        // NO redirigir a /offline - rompe la funcionalidad offline de la app
+        // La app funciona en modo SPA, si ya están en una página, déjala funcionar
         throw error;
     }
 };

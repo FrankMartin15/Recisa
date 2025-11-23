@@ -97,10 +97,9 @@
                             <div class="user-details">
                                 <span
                                     class="d-none d-lg-inline me-2 text-gray-600 small user-name">{{ Auth::user()->names }}</span>
-                                <!-- Muestra el estaado de conectividad debajo del nombre -->
+                                <!-- Muestra el estado de conectividad debajo del nombre -->
                                 <div class="connection-status-inline" id="connection-inline">
-                                    <div class="connection-dot-small online" id="connection-dot-small"></div>
-                                    <span class="connection-text-small" id="connection-text-small">En línea</span>
+                                    <span class="connection-text-small online" id="connection-text-small">En línea</span>
                                 </div>
                             </div>
                             @if (Auth::user()->image == null)
@@ -143,44 +142,56 @@
     function updateConnectionIndicator() {
         // OPCIÓN 1: Indicador de esquina
         const cornerIndicator = document.getElementById('connection-status');
-
-        // OPCIÓN 2: Indicador inline debajo del nombre
-        const inlineDot = document.getElementById('connection-dot-small');
         const inlineText = document.getElementById('connection-text-small');
 
-        const isOnline = navigator.onLine;
+        // Verificación real de conectividad (no solo navigator.onLine)
+        let isOnline = navigator.onLine;
 
-        // Actualizar indicador de esquina
-        if (cornerIndicator) {
-            cornerIndicator.classList.remove('online', 'offline', 'checking');
-            cornerIndicator.classList.add(isOnline ? 'online' : 'offline');
+        // Si navigator.onLine dice que está online, hacer ping real
+        if (isOnline && window.recisaOffline && window.recisaOffline.checkConnectivity) {
+            window.recisaOffline.checkConnectivity().then(online => {
+                isOnline = online;
+                applyConnectionStyles(isOnline);
+            });
+        } else {
+            applyConnectionStyles(isOnline);
         }
 
-        // Actualizar indicador inline
-        if (inlineDot && inlineText) {
-            inlineDot.classList.remove('online', 'offline', 'checking');
-            inlineDot.classList.add(isOnline ? 'online' : 'offline');
+        function applyConnectionStyles(online) {
+            // Actualizar indicador de esquina
+            if (cornerIndicator) {
+                cornerIndicator.classList.remove('online', 'offline', 'checking');
+                cornerIndicator.classList.add(online ? 'online' : 'offline');
+            }
 
-            inlineText.textContent = isOnline ? 'En línea' : 'Sin conexión';
-            inlineText.className = `connection-text-small ${isOnline ? 'online' : 'offline'}`;
+            // Actualizar texto inline
+            if (inlineText) {
+                inlineText.textContent = online ? 'En línea' : 'Sin conexión';
+                inlineText.className = `connection-text-small ${online ? 'online' : 'offline'}`;
+            }
+
+            // Mostrar notificación solo cuando cambia el estado
+            if (lastConnectionState !== online) {
+                const message = online ? 'Conexión restaurada' : 'Conexión perdida';
+                const type = online ? 'online' : 'offline';
+                showNotification(message, type);
+            }
+
+            lastConnectionState = online;
         }
-
-        // Mostrar notificación solo cuando cambia el estado
-        if (lastConnectionState !== isOnline) {
-            const message = isOnline ? 'Conexión restaurada' : 'Conexión perdida';
-            const type = isOnline ? 'online' : 'offline';
-            showNotification(message, type);
-        }
-
-        lastConnectionState = isOnline;
     }
 
     // Inicializar cuando el DOM esté listo
     document.addEventListener('DOMContentLoaded', () => {
+        // Verificar inmediatamente
         updateConnectionIndicator();
+
+        // Eventos de conexión
         window.addEventListener('online', updateConnectionIndicator);
         window.addEventListener('offline', updateConnectionIndicator);
-        setInterval(updateConnectionIndicator, 30000);
+
+        // Verificar cada 5 segundos (antes era 30 segundos)
+        setInterval(updateConnectionIndicator, 5000);
     });
 </script>
 
@@ -253,41 +264,27 @@
     .connection-status-inline {
         display: flex;
         align-items: center;
-        gap: 5px;
         margin-top: 2px;
     }
 
-    .connection-dot-small {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        transition: all 0.3s ease;
-    }
-
-    .connection-dot-small.online {
-        background: #10B981;
-        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
-    }
-
-    .connection-dot-small.offline {
-        background: #EF4444;
-        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
-    }
-
     .connection-text-small {
-        font-size: 10px;
-        font-weight: 500;
+        font-size: 11px;
+        font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         transition: color 0.3s ease;
+        padding: 2px 8px;
+        border-radius: 4px;
     }
 
     .connection-text-small.online {
         color: #10B981;
+        background: rgba(16, 185, 129, 0.1);
     }
 
     .connection-text-small.offline {
         color: #EF4444;
+        background: rgba(239, 68, 68, 0.1);
     }
 
     /* Notificación de estado */

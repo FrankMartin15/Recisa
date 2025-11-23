@@ -66,9 +66,12 @@
                                         @endforeach
                                     </select>
                                 </div>
+                                <small id="cupos-offline-notice" class="text-warning" style="display: none;">
+                                    <i class="fas fa-exclamation-triangle"></i> Modo offline: Los cupos y horas mostrados son aproximados
+                                </small>
                             </div>
-                            
-                            <div class="col-md-12 mt-3">
+
+            <div class="col-md-12 mt-3">
                                 <div class="input-group">
                                     <label class="input-group-text" for="id_patient">
                                         <i class="fa-solid fa-bed-pulse text-primary"></i>
@@ -265,12 +268,31 @@ $(document).ready(function() {
         }
     }
 
+    // ⭐ MOSTRAR/OCULTAR AVISO DE CUPOS APROXIMADOS EN MODO OFFLINE
+    function actualizarAvisoCuposOffline() {
+        const isOffline = !navigator.onLine;
+        const notice = $('#cupos-offline-notice');
+
+        if (isOffline) {
+            notice.show();
+        } else {
+            notice.hide();
+        }
+    }
+
     // Ejecutar al cargar la página
     actualizarCampoFechaSegunConexion();
+    actualizarAvisoCuposOffline();
 
     // Listeners para cambios de conexión
-    window.addEventListener('online', actualizarCampoFechaSegunConexion);
-    window.addEventListener('offline', actualizarCampoFechaSegunConexion);
+    window.addEventListener('online', () => {
+        actualizarCampoFechaSegunConexion();
+        actualizarAvisoCuposOffline();
+    });
+    window.addEventListener('offline', () => {
+        actualizarCampoFechaSegunConexion();
+        actualizarAvisoCuposOffline();
+    });
 
     // ⭐ GUARDAR DATOS ORIGINALES
     const originalQuotaOptions = $('#id_quota').html();
@@ -518,40 +540,58 @@ $(document).ready(function() {
         btnSpinner.removeClass('d-none');
 
         if (window.recisaOffline && typeof window.recisaOffline.processForm === 'function') {
-            // Procesar formulario
-            window.recisaOffline.processForm(event);
-            
-            // Obtener datos para actualizar el modal ANTES de resetear el form
+            // Obtener datos ANTES de procesar (para marcar hora como reservada)
             const selectedQuotaOption = $('#id_quota option:selected');
             const doctorId = selectedQuotaOption.data('doctor-id');
             const patientName = $('#id_patient option:selected').text().trim();
             const appointmentTime = $('#time').val();
-            
+            const appointmentDate = $('#date').val();
+            const isOffline = !navigator.onLine;
+
+            // Procesar formulario
+            window.recisaOffline.processForm(event);
+
+            // Si guardó offline, marcar hora como reservada para evitar duplicados
+            if (isOffline && appointmentTime) {
+                // Agregar la hora al array de horas reservadas
+                if (!reservedHours.includes(appointmentTime)) {
+                    reservedHours.push(appointmentTime);
+                    console.log('⏰ Hora marcada como reservada (offline):', appointmentTime);
+                }
+            }
+
             // Restauración después del envío
             setTimeout(() => {
                 $('#appointment-form')[0].reset();
                 $('#date').val(new Date().toISOString().split('T')[0]);
                 restaurarSelectPickersCompleto();
-                
+
+                // Regenerar horas disponibles (ahora sin la hora recién reservada)
+                regenerarHorasDisponibles();
+
                 // Actualizar el modal con la nueva cita
                 if (doctorId && patientName && appointmentTime) {
                     actualizarModalDeCitas(doctorId, patientName, appointmentTime);
                 }
-                
+
                 // Verificación adicional para evitar opciones en blanco
                 setTimeout(() => {
                     verificarDuplicados();
                 }, 500);
-                
-                // Mostrar mensaje de éxito
+
+                // Mostrar mensaje de éxito (diferente si es offline)
+                const message = isOffline
+                    ? 'Cita guardada localmente. Se enviará cuando vuelva la conexión.'
+                    : 'La cita ha sido registrada exitosamente y se mandó un mensaje al paciente.';
+
                 Swal.fire({
                     icon: 'success',
                     title: 'Cita Registrada',
-                    text: 'La cita ha sido registrada exitosamente y se mandó un mensaje al paciente.',
-                    timer: 2000,
+                    text: message,
+                    timer: isOffline ? 3000 : 2000,
                     showConfirmButton: false
                 });
-                
+
                 // Restaurar botón
                 submitBtn.prop('disabled', false);
                 btnText.removeClass('d-none');

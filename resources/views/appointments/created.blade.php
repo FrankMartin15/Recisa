@@ -21,7 +21,7 @@
                 </div>
 
                 <!-- COMPONENTE: Datos Pendientes de Sincronización -->
-                <div id="pending-appointments-container" class="alert alert-info m-3" style="display: none;">
+                <div id="pending-appointments-container" class="alert alert-info m-3 pending-sync-hidden">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <i class="fas fa-cloud-upload-alt"></i>
@@ -38,6 +38,29 @@
                         </div>
                     </div>
                 </div>
+
+                <style>
+                    /* Animaciones suaves para el componente de datos pendientes */
+                    #pending-appointments-container {
+                        transition: opacity 0.5s ease, max-height 0.5s ease, margin 0.5s ease, padding 0.5s ease;
+                        opacity: 1;
+                        max-height: 500px;
+                        overflow: hidden;
+                    }
+
+                    #pending-appointments-container.pending-sync-hidden {
+                        opacity: 0;
+                        max-height: 0;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        pointer-events: none;
+                    }
+
+                    #pending-appointments-container.pending-sync-visible {
+                        opacity: 1;
+                        max-height: 500px;
+                    }
+                </style>
 
                 <div class="card-body">
                     <div class="col-md-12">
@@ -669,8 +692,9 @@ $(document).ready(function() {
                     );
 
                     if (pendingAppointments.length > 0) {
-                        // Mostrar container
-                        container.style.display = 'block';
+                        // Mostrar container con animación suave
+                        container.classList.remove('pending-sync-hidden');
+                        container.classList.add('pending-sync-visible');
                         badge.textContent = pendingAppointments.length;
 
                         // Limpiar lista
@@ -700,7 +724,9 @@ $(document).ready(function() {
                             list.appendChild(item);
                         });
                     } else {
-                        container.style.display = 'none';
+                        // Ocultar container con animación suave
+                        container.classList.remove('pending-sync-visible');
+                        container.classList.add('pending-sync-hidden');
                     }
                 };
             };

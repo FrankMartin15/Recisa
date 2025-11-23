@@ -75,6 +75,7 @@
                             <div class="col-md-2">
                                 <label for="dni" class="form-label">DNI:</label>
                                 <input readonly class="form-control" type="text" name="dni" id="dni"
+                                    maxlength="8" minlength="8" required
                                     value="{{ old('dni') }}">
                             </div>
                             <div class="col-md-3">
@@ -100,6 +101,7 @@
                             <div class="col-md-3">
                                 <label for="date" class="form-label">Fecha Nacimiento</label>
                                 <input type="date" name="date" id="date" class="form-control"
+                                    max="{{ date('Y-m-d') }}" required
                                     value="{{ old('date') }}">
                             </div>
                             <div class="col-md-12 text-center mt-3">
@@ -319,9 +321,86 @@
             this.value = this.value.replace(/\s+/g, ' ').trim();
         });
 
+        // ⭐ FUNCIÓN PARA VERIFICAR DNI DUPLICADO
+        async function checkDuplicateDNI(dni) {
+            try {
+                // 1. Verificar en IndexedDB (datos pendientes offline)
+                const dbRequest = indexedDB.open('recisa-offline-db', 51);
+
+                const pendingDNIs = await new Promise((resolve, reject) => {
+                    dbRequest.onsuccess = (event) => {
+                        const db = event.target.result;
+                        const transaction = db.transaction(['pending-requests'], 'readonly');
+                        const store = transaction.objectStore('pending-requests');
+                        const getAllRequest = store.getAll();
+
+                        getAllRequest.onsuccess = () => {
+                            const allPending = getAllRequest.result;
+                            // Filtrar solo pacientes y extraer DNIs
+                            const dnis = allPending
+                                .filter(req => req.url && (req.url.includes('/patients/add') || req.url.includes('/patients/insert')))
+                                .map(req => req.body?.dni)
+                                .filter(Boolean);
+                            resolve(dnis);
+                        };
+
+                        getAllRequest.onerror = () => reject(getAllRequest.error);
+                    };
+
+                    dbRequest.onerror = () => reject(dbRequest.error);
+                });
+
+                // Verificar si el DNI ya está en pendientes
+                if (pendingDNIs.includes(dni)) {
+                    console.log('❌ DNI duplicado encontrado en datos pendientes:', dni);
+                    return true;
+                }
+
+                // 2. Verificar en el servidor (solo si está online)
+                if (navigator.onLine) {
+                    try {
+                        const response = await fetch(`{{ url('recisa/patients/list/json') }}?dni=${dni}`);
+                        if (response.ok) {
+                            const patients = await response.json();
+                            const exists = patients.some(patient => patient.dni === dni);
+                            if (exists) {
+                                console.log('❌ DNI duplicado encontrado en servidor:', dni);
+                                return true;
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('No se pudo verificar DNI en servidor:', error);
+                        // Continuar sin bloquear si hay error de red
+                    }
+                }
+
+                return false;
+            } catch (error) {
+                console.error('Error al verificar DNI duplicado:', error);
+                // En caso de error, permitir continuar (evitar bloqueo por error)
+                return false;
+            }
+        }
+
         // 🔌 INTERCEPTAR ENVÍO DEL FORMULARIO
-        $('#patientForm').on('submit', function(e) {
+        $('#patientForm').on('submit', async function(e) {
             e.preventDefault(); // ✅ SIEMPRE prevenir submit por defecto
+
+            // ⭐ VALIDACIÓN 1: DNI debe ser exactamente 8 dígitos
+            const dni = $('#dni').val().trim();
+            if (dni.length !== 8 || !/^\d{8}$/.test(dni)) {
+                showModal('El DNI debe tener exactamente 8 dígitos numéricos', 'error');
+                $('#dni').focus();
+                return false;
+            }
+
+            // ⭐ VALIDACIÓN 2: Verificar DNI duplicado
+            const isDuplicate = await checkDuplicateDNI(dni);
+            if (isDuplicate) {
+                showModal('Ya existe un paciente registrado con este DNI: ' + dni, 'error');
+                $('#dni').focus();
+                return false;
+            }
 
             // Usar el Offline Manager global (maneja online y offline)
             if (window.recisaOffline && typeof window.recisaOffline.processForm === 'function') {

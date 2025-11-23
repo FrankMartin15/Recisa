@@ -61,6 +61,7 @@
     </div>
     <ul class="sidebar-nav">
         {{-- EL SCRIPT AÑADIRÁ 'active' Y 'show' DINÁMICAMENTE. NO SE NECESITAN AQUÍ. --}}
+        @auth
         @switch(Auth::user()->user_level)
         
         {{-- ================== ROL 1: ADMINISTRADOR ================== --}}
@@ -180,7 +181,8 @@
 
         @default
         @endswitch
-        
+        @endauth
+
         <br><br><br><br>
         <div class="d-flex">
             <button class="toggle-btn" type="button">

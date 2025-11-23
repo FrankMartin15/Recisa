@@ -43,7 +43,7 @@ Route::get('/csrf-token', function () {
 Route::view('/offline', 'offline')->name('offline');
 //Uusario no tiene acceso
 Route::get('/401', function () {
-    return view('page.401');
+    return view('page.401', ['specializations' => []]);
 });
 //Usuario no tiene acceso
 Route::get('/500', function () {
@@ -124,15 +124,15 @@ Route::group(['middleware'=>'doctor'],function(){
 Route::group(['middleware'=>'admin_or_secretary'],function(){
     //Rutas para crear los pacientes
     //La vista de los pacientes
-    Route::get('/recisa/patients/list',[PatientController::class,'list']);
+    Route::get('/recisa/patients/list',[PatientController::class,'list'])->name('patients.index');
     Route::get('/recisa/patients/list/json',[PatientController::class,'listJson']); // API JSON para IndexedDB
-    Route::get('/recisa/patients/add',[PatientController::class,'add']);
+    Route::get('/recisa/patients/add',[PatientController::class,'add'])->name('patients.create');
     Route::post('/recisa/patients/add-consulta', [DNIController::class, 'consultarDNI']);
-    Route::post('/recisa/patients/add',[PatientController::class,'insert']);
+    Route::post('/recisa/patients/add',[PatientController::class,'insert'])->name('patients.store');
     Route::post('/recisa/patients/insert',[PatientController::class,'insert']); // API para IndexedDB
-    Route::get('/recisa/patients/edit/{slug}',[PatientController::class,'edit']);
-    Route::post('/recisa/patients/edit/{slug}',[PatientController::class,'update']);
-    Route::get('/recisa/patients/delete/{id}',[PatientController::class,'delete']);
+    Route::get('/recisa/patients/edit/{slug}',[PatientController::class,'edit'])->name('patients.edit');
+    Route::post('/recisa/patients/edit/{slug}',[PatientController::class,'update'])->name('patients.update');
+    Route::get('/recisa/patients/delete/{id}',[PatientController::class,'delete'])->name('patients.destroy');
     //Buscar el paciente
     Route::post('/recisa/clinicalhistories/sheare-patient', [ClinicalHistoryController::class, 'shearePatient']);
     //Rutas para el historila clinico

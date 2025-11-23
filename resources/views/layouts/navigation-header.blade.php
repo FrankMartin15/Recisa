@@ -141,7 +141,10 @@
 
     // Función para mostrar notificaciones toast con icono apropiado
     function showNotification(message, type) {
-        const icon = type === 'online' ? '✓' : '⚠';
+        // Usar iconos FontAwesome apropiados para notificaciones
+        const icon = type === 'online'
+            ? '<i class="fas fa-wifi"></i>'
+            : '<i class="fas fa-wifi-slash"></i>';
         const bgColor = type === 'online' ? '#10B981' : '#EF4444';
 
         // Crear elemento de notificación
@@ -165,7 +168,7 @@
         `;
 
         notification.innerHTML = `
-            <span style="font-size: 18px; font-weight: bold;">${icon}</span>
+            <span style="font-size: 18px;">${icon}</span>
             <span>${message}</span>
         `;
 

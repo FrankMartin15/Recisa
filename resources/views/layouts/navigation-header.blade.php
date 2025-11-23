@@ -139,6 +139,45 @@
 <script>
     let lastConnectionState = navigator.onLine;
 
+    // Función para mostrar notificaciones toast con icono apropiado
+    function showNotification(message, type) {
+        const icon = type === 'online' ? '✓' : '⚠';
+        const bgColor = type === 'online' ? '#10B981' : '#EF4444';
+
+        // Crear elemento de notificación
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: ${bgColor};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        `;
+
+        notification.innerHTML = `
+            <span style="font-size: 18px; font-weight: bold;">${icon}</span>
+            <span>${message}</span>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Remover después de 3 segundos
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
     function updateConnectionIndicator() {
         // OPCIÓN 1: Indicador de esquina
         const cornerIndicator = document.getElementById('connection-status');
@@ -320,6 +359,29 @@
         .connection-corner-indicator {
             top: 10px;
             right: 10px;
+        }
+    }
+
+    /* Animaciones para notificaciones */
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(400px);
+            opacity: 0;
         }
     }
 </style>

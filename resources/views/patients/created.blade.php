@@ -15,6 +15,26 @@
                 <div class="card-header py-3">
                     <p class="text-primary m-0 fw-bold">Formulario del Paciente</p>
                 </div>
+
+                <!-- COMPONENTE: Datos Pendientes de Sincronización -->
+                <div id="pending-sync-container" class="alert alert-info m-3" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <strong>Pendientes de Sincronización:</strong>
+                            <span id="pending-count-badge" class="badge bg-warning text-dark ms-2">0</span>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#pending-list">
+                            Ver <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                    <div class="collapse mt-3" id="pending-list">
+                        <div class="list-group" id="pending-items-list">
+                            <!-- Lista dinámica -->
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card-body">
                     <div class="col-md-12">
                         @if ($errors->any())
@@ -351,6 +371,79 @@
         // Listeners de conexión
         window.addEventListener('online', checkOfflineState);
         window.addEventListener('offline', checkOfflineState);
+
+        // ⭐ FUNCIÓN PARA MOSTRAR DATOS PENDIENTES DE SINCRONIZACIÓN
+        async function loadPendingPatients() {
+            const container = document.getElementById('pending-sync-container');
+            const badge = document.getElementById('pending-count-badge');
+            const list = document.getElementById('pending-items-list');
+
+            try {
+                // Abrir IndexedDB
+                const dbRequest = indexedDB.open('recisa-offline-db', 51);
+
+                dbRequest.onsuccess = (event) => {
+                    const db = event.target.result;
+                    const transaction = db.transaction(['pending-requests'], 'readonly');
+                    const store = transaction.objectStore('pending-requests');
+                    const getAllRequest = store.getAll();
+
+                    getAllRequest.onsuccess = () => {
+                        const allPending = getAllRequest.result;
+
+                        // Filtrar solo los pacientes (por URL)
+                        const pendingPatients = allPending.filter(req =>
+                            req.url && (req.url.includes('/patients/add') || req.url.includes('/patients/insert'))
+                        );
+
+                        if (pendingPatients.length > 0) {
+                            // Mostrar container
+                            container.style.display = 'block';
+                            badge.textContent = pendingPatients.length;
+
+                            // Limpiar lista
+                            list.innerHTML = '';
+
+                            // Agregar cada paciente a la lista
+                            pendingPatients.forEach((req, index) => {
+                                const data = req.body || {};
+                                const item = document.createElement('div');
+                                item.className = 'list-group-item list-group-item-action';
+                                item.innerHTML = `
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1"><i class="fas fa-user"></i> ${data.names || 'Sin nombre'} ${data.surnames || ''}</h6>
+                                        <small class="text-muted">${new Date(req.timestamp).toLocaleString()}</small>
+                                    </div>
+                                    <p class="mb-1 small">
+                                        <strong>DNI:</strong> ${data.dni || 'N/A'} |
+                                        <strong>Celular:</strong> ${data.phone || 'N/A'}
+                                    </p>
+                                `;
+                                list.appendChild(item);
+                            });
+                        } else {
+                            container.style.display = 'none';
+                        }
+                    };
+                };
+
+                dbRequest.onerror = () => {
+                    console.error('Error al abrir IndexedDB');
+                };
+            } catch (error) {
+                console.error('Error al cargar datos pendientes:', error);
+            }
+        }
+
+        // Cargar datos pendientes al iniciar
+        loadPendingPatients();
+
+        // Actualizar cada 10 segundos
+        setInterval(loadPendingPatients, 10000);
+
+        // Actualizar cuando cambie el estado de conexión
+        window.addEventListener('online', loadPendingPatients);
+        window.addEventListener('offline', loadPendingPatients);
 
     </script>
 @endpush

@@ -19,6 +19,26 @@
                 <div class="card-header py-3">
                     <p class="text-primary m-0 fw-bold">Formulario de Registro de Citas</p>
                 </div>
+
+                <!-- COMPONENTE: Datos Pendientes de Sincronización -->
+                <div id="pending-appointments-container" class="alert alert-info m-3" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <strong>Citas Pendientes de Sincronización:</strong>
+                            <span id="pending-appointments-badge" class="badge bg-warning text-dark ms-2">0</span>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#pending-appointments-list">
+                            Ver <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                    <div class="collapse mt-3" id="pending-appointments-list">
+                        <div class="list-group" id="pending-appointments-items">
+                            <!-- Lista dinámica -->
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card-body">
                     <div class="col-md-12">
                         @if ($errors->any())
@@ -613,16 +633,96 @@ $(document).ready(function() {
     // ⭐ VERIFICACIÓN SIMPLE DE DUPLICADOS CADA 15 SEGUNDOS
     setInterval(function() {
         console.log('� Verificación periódica de duplicados...');
-        
+
         const quotaOptions = $('#id_quota option');
         const patientOptions = $('#id_patient option');
-        
+
         // Si hay demasiadas opciones (más del doble esperado), restaurar
         if (quotaOptions.length > 20 || patientOptions.length > 40) {
             console.log('⚠️ Demasiadas opciones detectadas, restaurando...');
             restaurarSelectPickersCompleto();
         }
     }, 15000);
+
+    // ⭐ FUNCIÓN PARA MOSTRAR CITAS PENDIENTES DE SINCRONIZACIÓN
+    async function loadPendingAppointments() {
+        const container = document.getElementById('pending-appointments-container');
+        const badge = document.getElementById('pending-appointments-badge');
+        const list = document.getElementById('pending-appointments-items');
+
+        try {
+            // Abrir IndexedDB
+            const dbRequest = indexedDB.open('recisa-offline-db', 51);
+
+            dbRequest.onsuccess = (event) => {
+                const db = event.target.result;
+                const transaction = db.transaction(['pending-requests'], 'readonly');
+                const store = transaction.objectStore('pending-requests');
+                const getAllRequest = store.getAll();
+
+                getAllRequest.onsuccess = () => {
+                    const allPending = getAllRequest.result;
+
+                    // Filtrar solo las citas (por URL)
+                    const pendingAppointments = allPending.filter(req =>
+                        req.url && (req.url.includes('/appointments/add') || req.url.includes('/appoitnment/add') || req.url.includes('/appointments/insert'))
+                    );
+
+                    if (pendingAppointments.length > 0) {
+                        // Mostrar container
+                        container.style.display = 'block';
+                        badge.textContent = pendingAppointments.length;
+
+                        // Limpiar lista
+                        list.innerHTML = '';
+
+                        // Agregar cada cita a la lista
+                        pendingAppointments.forEach((req, index) => {
+                            const data = req.body || {};
+
+                            // Buscar nombres de paciente y doctor en los selectores
+                            const patientName = $(`#id_patient option[value="${data.id_patient}"]`).text() || 'Paciente desconocido';
+                            const quotaText = $(`#id_quota option[value="${data.id_quota}"]`).text() || 'Especialidad desconocida';
+
+                            const item = document.createElement('div');
+                            item.className = 'list-group-item list-group-item-action';
+                            item.innerHTML = `
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1"><i class="fas fa-calendar-check"></i> ${patientName}</h6>
+                                    <small class="text-muted">${new Date(req.timestamp).toLocaleString()}</small>
+                                </div>
+                                <p class="mb-1 small">
+                                    <strong>Especialidad:</strong> ${quotaText}<br>
+                                    <strong>Fecha:</strong> ${data.date || 'N/A'} |
+                                    <strong>Hora:</strong> ${data.time || 'N/A'}
+                                </p>
+                            `;
+                            list.appendChild(item);
+                        });
+                    } else {
+                        container.style.display = 'none';
+                    }
+                };
+            };
+
+            dbRequest.onerror = () => {
+                console.error('Error al abrir IndexedDB');
+            };
+        } catch (error) {
+            console.error('Error al cargar citas pendientes:', error);
+        }
+    }
+
+    // Cargar citas pendientes al iniciar
+    loadPendingAppointments();
+
+    // Actualizar cada 10 segundos
+    setInterval(loadPendingAppointments, 10000);
+
+    // Actualizar cuando cambie el estado de conexión
+    window.addEventListener('online', loadPendingAppointments);
+    window.addEventListener('offline', loadPendingAppointments);
+
 });
 </script>
 @endpush

@@ -147,6 +147,7 @@ Route::group(['middleware'=>'admin_or_secretary'],function(){
     Route::get('/recisa/appointments/list/json',[AppointmentController::class,'listJson']); // API JSON para IndexedDB
     Route::get('/recisa/appoitnment/add',[AppointmentController::class,'add']);
     Route::post('/recisa/appoitnment/add',[AppointmentController::class,'insert']);
+    Route::post('/recisa/appointments/add',[AppointmentController::class,'insert']); // Ruta correcta (con 's') para formulario
     Route::post('/recisa/appointments/insert',[AppointmentController::class,'insert']); // API para IndexedDB
     Route::get('/recisa/appoitnment/show/{appointment}',[AppointmentController::class,'show']);
     //Reporte de Pacientes Total

@@ -217,9 +217,21 @@
 
                 if (syncedCount > 0) {
                     showAlert('sync-success', 'Sincronización Completada', `${syncedCount} elementos enviados.`);
-                    // Refresh UI if needed
-                    if (window.location.pathname === '/dashboard' || window.location.pathname === '/') {
-                        window.location.reload();
+                    // Refresh UI if needed - reload pages that show data lists
+                    const currentPath = window.location.pathname;
+                    const shouldReload =
+                        currentPath === '/dashboard' ||
+                        currentPath === '/' ||
+                        currentPath.includes('/patients/list') ||
+                        currentPath.includes('/appointments/list') ||
+                        currentPath.includes('/appoitnment/list') ||
+                        currentPath.includes('/patients/add') ||
+                        currentPath.includes('/patients/created') ||
+                        currentPath.includes('/appointments/add') ||
+                        currentPath.includes('/appoitnment/add');
+
+                    if (shouldReload) {
+                        setTimeout(() => window.location.reload(), 1000);
                     }
                 }
                 syncInProgress = false;

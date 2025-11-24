@@ -51,19 +51,34 @@
     }
 
     // --- Connectivity ---
+    let lastConnectivityCheck = null;
+    let lastConnectivityResult = navigator.onLine;
+
     async function checkConnectivity() {
         if (!navigator.onLine) return false;
+
+        // Cache del resultado por 3 segundos para evitar verificaciones excesivas
+        const now = Date.now();
+        if (lastConnectivityCheck && (now - lastConnectivityCheck) < 3000) {
+            return lastConnectivityResult;
+        }
+
         try {
             const controller = new AbortController();
-            setTimeout(() => controller.abort(), 3000);
-            // Use a lightweight endpoint or just the home page with HEAD
+            setTimeout(() => controller.abort(), 5000); // Aumentado a 5 segundos
+
             const response = await fetch('/?ping=' + Date.now(), {
                 method: 'HEAD',
                 signal: controller.signal,
                 cache: 'no-cache'
             });
+
+            lastConnectivityCheck = now;
+            lastConnectivityResult = response.ok;
             return response.ok;
         } catch (error) {
+            lastConnectivityCheck = now;
+            lastConnectivityResult = false;
             return false;
         }
     }

@@ -247,42 +247,40 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- LÓGICA MEJORADA PARA ESTADO DE CONEXIÓN ---
     const offlineElements = document.querySelectorAll('.offline-hide');
-    const statusIndicator = document.getElementById('connection-status');
 
     async function updateConnectionStatus() {
         try {
-            // Verificar conexión real
-            const online = navigator.onLine && await fetch('/csrf-token', { 
-                method: 'HEAD',
-                cache: 'no-cache',
-                timeout: 3000 
-            }).then(r => r.ok).catch(() => false);
+            let online = navigator.onLine;
 
-            if (online) {
-                // Conectado
-                if (statusIndicator) {
-                    statusIndicator.classList.remove('offline');
-                    statusIndicator.classList.add('online');
-                    statusIndicator.title = 'Conectado a Internet';
+            // Si hay conexión según navigator, verificar con ping real
+            if (online && window.recisaOffline && window.recisaOffline.checkConnectivity) {
+                online = await window.recisaOffline.checkConnectivity();
+            } else if (online) {
+                // Fallback: si offline-manager no está disponible, hacer ping simple
+                try {
+                    const controller = new AbortController();
+                    setTimeout(() => controller.abort(), 3000);
+                    const response = await fetch('/?ping=' + Date.now(), {
+                        method: 'HEAD',
+                        signal: controller.signal,
+                        cache: 'no-cache'
+                    });
+                    online = response.ok;
+                } catch (e) {
+                    online = false;
                 }
-                offlineElements.forEach(el => el.style.display = 'block');
-            } else {
-                // Desconectado
-                if (statusIndicator) {
-                    statusIndicator.classList.remove('online');
-                    statusIndicator.classList.add('offline');
-                    statusIndicator.title = 'Sin conexión a Internet';
-                }
-                offlineElements.forEach(el => el.style.display = 'none');
             }
+
+            // Actualizar visibilidad de elementos que solo funcionan online
+            offlineElements.forEach(el => {
+                el.style.display = online ? '' : 'none';
+            });
+
+            console.log('[Menu] Estado de conexión actualizado:', online ? 'Online' : 'Offline');
         } catch (error) {
-            console.log('Error verificando conectividad:', error);
-            // En caso de error, asumir offline
-            if (statusIndicator) {
-                statusIndicator.classList.remove('online');
-                statusIndicator.classList.add('offline');
-                statusIndicator.title = 'Sin conexión a Internet';
-            }
+            console.error('[Menu] Error verificando conectividad:', error);
+            // En caso de error, ocultar elementos offline
+            offlineElements.forEach(el => el.style.display = 'none');
         }
     }
 
@@ -290,6 +288,9 @@ document.addEventListener('DOMContentLoaded', function () {
     updateConnectionStatus();
     window.addEventListener('online', updateConnectionStatus);
     window.addEventListener('offline', updateConnectionStatus);
+
+    // Verificar cada 30 segundos (reducido para evitar cambios rápidos)
+    setInterval(updateConnectionStatus, 30000);
 });
 </script>
 

@@ -181,7 +181,7 @@
         }, 3000);
     }
 
-    function updateConnectionIndicator() {
+    async function updateConnectionIndicator() {
         // OPCIÓN 1: Indicador de esquina
         const cornerIndicator = document.getElementById('connection-status');
         const inlineText = document.getElementById('connection-text-small');
@@ -190,14 +190,32 @@
         let isOnline = navigator.onLine;
 
         // Si navigator.onLine dice que está online, hacer ping real
-        if (isOnline && window.recisaOffline && window.recisaOffline.checkConnectivity) {
-            window.recisaOffline.checkConnectivity().then(online => {
-                isOnline = online;
-                applyConnectionStyles(isOnline);
-            });
-        } else {
-            applyConnectionStyles(isOnline);
+        if (isOnline) {
+            // Esperar a que offline-manager esté disponible
+            if (window.recisaOffline && window.recisaOffline.checkConnectivity) {
+                try {
+                    isOnline = await window.recisaOffline.checkConnectivity();
+                } catch (e) {
+                    console.warn('[Header] Error al verificar conectividad:', e);
+                }
+            } else {
+                // Fallback: verificación simple si offline-manager no está disponible
+                try {
+                    const controller = new AbortController();
+                    setTimeout(() => controller.abort(), 3000);
+                    const response = await fetch('/?ping=' + Date.now(), {
+                        method: 'HEAD',
+                        signal: controller.signal,
+                        cache: 'no-cache'
+                    });
+                    isOnline = response.ok;
+                } catch (e) {
+                    isOnline = false;
+                }
+            }
         }
+
+        applyConnectionStyles(isOnline);
 
         function applyConnectionStyles(online) {
             // Actualizar indicador de esquina
@@ -228,12 +246,12 @@
         // Verificar inmediatamente
         updateConnectionIndicator();
 
-        // Eventos de conexión
+        // Eventos de conexión (estos son instantáneos)
         window.addEventListener('online', updateConnectionIndicator);
         window.addEventListener('offline', updateConnectionIndicator);
 
-        // Verificar cada 5 segundos (antes era 30 segundos)
-        setInterval(updateConnectionIndicator, 5000);
+        // Verificar cada 30 segundos (reducido de 5 para evitar cambios rápidos)
+        setInterval(updateConnectionIndicator, 30000);
     });
 </script>
 

@@ -1,7 +1,7 @@
-const CACHE_VERSION = 'recisa-v5-no-offline-redirect';
-const CACHE_STATIC = 'recisa-static-v5';
-const CACHE_DYNAMIC = 'recisa-dynamic-v5';
-const CACHE_API = 'recisa-api-v5';
+const CACHE_VERSION = 'recisa-v7-stable-connection';
+const CACHE_STATIC = 'recisa-static-v7';
+const CACHE_DYNAMIC = 'recisa-dynamic-v7';
+const CACHE_API = 'recisa-api-v7';
 
 // Assets that are absolutely required for the app shell
 const STATIC_ASSETS = [

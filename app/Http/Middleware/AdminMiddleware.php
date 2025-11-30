@@ -16,16 +16,24 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if(Auth::check() && Auth::user()->status == 1 && Auth::user()->group->group_status == 1){
-            if(Auth::user()->user_level==1){
+        // Verificar que el usuario esté autenticado
+        if(!Auth::check()){
+            return redirect(url('/login'));
+        }
+
+        $user = Auth::user();
+
+        // Verificar que el usuario y su grupo existan y estén activos
+        if($user->status == 1 && $user->group && $user->group->group_status == 1){
+            if($user->user_level == 1){
                 return $next($request);
             }else{  
-                Auth::logout();
-                return redirect(url('/401'));
+                // No cerrar sesión, solo redirigir
+                return redirect(url('/401'))->with('error', 'No tienes permisos de administrador');
             } 
         }else{
-            Auth::logout();
-            return redirect(url('/401'));
+            // No cerrar sesión, solo redirigir
+            return redirect(url('/401'))->with('error', 'Tu cuenta no está activa');
         }
     }
 }

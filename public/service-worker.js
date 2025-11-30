@@ -1,7 +1,7 @@
-const CACHE_VERSION = 'recisa-v7-stable-connection';
-const CACHE_STATIC = 'recisa-static-v7';
-const CACHE_DYNAMIC = 'recisa-dynamic-v7';
-const CACHE_API = 'recisa-api-v7';
+const CACHE_VERSION = 'recisa-v13-doctor-fix-full';
+const CACHE_STATIC = 'recisa-static-v13';
+const CACHE_DYNAMIC = 'recisa-dynamic-v13';
+const CACHE_API = 'recisa-api-v13';
 
 // Assets that are absolutely required for the app shell
 const STATIC_ASSETS = [
@@ -28,18 +28,20 @@ const STATIC_ASSETS = [
     '/assets/js/jquery.dataTables.min.js',
     '/assets/js/dataTables.bootstrap.min.js',
     '/assets/js/menu_bar.js'
+    // NOTE: Dynamic HTML pages are NOT included here to prevent install failures.
+    // They will be cached at runtime via networkFirst strategy.
 ];
 
 // Install Event: Cache Static Assets
 self.addEventListener('install', (event) => {
     console.log(`[SW] Installing Service Worker ${CACHE_VERSION}`);
+    self.skipWaiting(); // Force activation
     event.waitUntil(
         caches.open(CACHE_STATIC)
             .then(cache => {
                 console.log('[SW] Caching App Shell');
                 return cache.addAll(STATIC_ASSETS);
             })
-            .then(() => self.skipWaiting())
     );
 });
 
@@ -56,12 +58,11 @@ self.addEventListener('activate', (event) => {
                     }
                 })
             );
-        }).then(() => self.clients.claim())
+        }).then(() => self.clients.claim()) // Take control immediately
     );
 });
 
 // Helper: Network First (for API and HTML navigation)
-// Tries network, if fails, tries cache. If both fail, returns offline page (for nav) or error.
 const networkFirst = async (request, cacheName) => {
     try {
         const response = await fetch(request);
@@ -75,14 +76,11 @@ const networkFirst = async (request, cacheName) => {
         if (cachedResponse) {
             return cachedResponse;
         }
-        // NO redirigir a /offline - rompe la funcionalidad offline de la app
-        // La app funciona en modo SPA, si ya están en una página, déjala funcionar
         throw error;
     }
 };
 
-// Helper: Stale While Revalidate (for Assets: JS, CSS, Images)
-// Returns cache immediately, then updates cache from network in background.
+// Helper: Stale While Revalidate (for Assets)
 const staleWhileRevalidate = async (request, cacheName) => {
     const cache = await caches.open(cacheName);
     const cachedResponse = await cache.match(request);
@@ -92,9 +90,7 @@ const staleWhileRevalidate = async (request, cacheName) => {
             cache.put(request, networkResponse.clone());
         }
         return networkResponse;
-    }).catch(() => {
-        // Network failed, nothing to do if we have cache
-    });
+    }).catch(() => { });
 
     return cachedResponse || fetchPromise;
 };
@@ -104,19 +100,25 @@ self.addEventListener('fetch', (event) => {
     const request = event.request;
     const url = new URL(request.url);
 
-    // Ignore non-GET requests (POST/PUT/DELETE handled by offline-manager.js)
     if (request.method !== 'GET') return;
-
-    // Ignore different origin
     if (url.origin !== self.location.origin) return;
 
-    // 1. API Requests -> Network First (Cache API responses for offline viewing)
-    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/dashboard') || url.pathname === '/') {
+    // 1. API Requests
+    if (url.pathname.startsWith('/api/') ||
+        url.pathname.startsWith('/dashboard') ||
+        url.pathname === '/' ||
+        url.pathname.includes('/json')) {
         event.respondWith(networkFirst(request, CACHE_API));
         return;
     }
 
-    // 2. Static Assets (JS, CSS, Images, Fonts) -> Stale While Revalidate
+    // 2. Application Pages (Dynamic HTML)
+    if (url.pathname.startsWith('/recisa/') || url.pathname.startsWith('/doctor/')) {
+        event.respondWith(networkFirst(request, CACHE_DYNAMIC));
+        return;
+    }
+
+    // 3. Static Assets
     if (request.destination === 'script' ||
         request.destination === 'style' ||
         request.destination === 'image' ||
@@ -125,6 +127,6 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 3. Default -> Network First
+    // 4. Default
     event.respondWith(networkFirst(request, CACHE_DYNAMIC));
 });

@@ -72,7 +72,7 @@
     <script src="{{asset('assets/js/Ludens---1-Index-Table-with-Search--Sort-Filters-v20.js')}}"></script>
     <script src="{{asset('assets/js/Table-With-Search.js')}}"></script>
     <script src="{{asset('assets/js/theme.js')}}"></script>
-    <script src="{{ asset('assets/js/offline-manager.js') }}"></script>
+    <script src="{{ asset('assets/js/offline-manager.v62.js') }}"></script>
     <!--Anderson-->
 
     <!--JS bar-->

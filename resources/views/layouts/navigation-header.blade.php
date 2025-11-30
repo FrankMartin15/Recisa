@@ -34,7 +34,7 @@
         </div>
 
         <ul class="navbar-nav flex-nowrap ms-auto">
-            @if (Auth::user()->user_level == 1)
+            @if (Auth::check() && Auth::user()->user_level == 1)
                 <li class="nav-item dropdown no-arrow mx-1">
                     <div class="nav-item dropdown no-arrow">
                         <a class="dropdown-toggle nav-link" aria-expanded="false" data-bs-toggle="dropdown"
@@ -96,19 +96,24 @@
                         <div class="user-info-container">
                             <div class="user-details">
                                 <span
-                                    class="d-none d-lg-inline me-2 text-gray-600 small user-name">{{ Auth::user()->names }}</span>
+                                    class="d-none d-lg-inline me-2 text-gray-600 small user-name">{{ Auth::check() ? Auth::user()->names : 'Invitado' }}</span>
                                 <!-- Muestra el estado de conectividad debajo del nombre -->
                                 <div class="connection-status-inline" id="connection-inline">
                                     <span class="connection-text-small online" id="connection-text-small">En línea</span>
                                 </div>
                             </div>
-                            @if (Auth::user()->image == null)
-                                <img class="border rounded-circle img-profile"
-                                    src="https://i.postimg.cc/hjSBbZX4/doctor.png">
+                            @if (Auth::check())
+                                @if (Auth::user()->image == null)
+                                    <img class="border rounded-circle img-profile"
+                                        src="https://i.postimg.cc/hjSBbZX4/doctor.png">
+                                @else
+                                    <img class="border rounded-circle img-profile"
+                                        src="{{ Storage::url('public/perfiles/' . Auth::user()->image) }}"
+                                        onerror="this.src='https://i.postimg.cc/hjSBbZX4/doctor.png';">
+                                @endif
                             @else
                                 <img class="border rounded-circle img-profile"
-                                    src="{{ Storage::url('public/perfiles/' . Auth::user()->image) }}"
-                                    onerror="this.src='https://i.postimg.cc/hjSBbZX4/doctor.png';">
+                                    src="https://i.postimg.cc/hjSBbZX4/doctor.png">
                             @endif
                         </div>
                     </a>

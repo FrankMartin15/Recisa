@@ -414,14 +414,42 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Form submit handler
-    document.getElementById('historyForm').addEventListener('submit', function(event) {
+    document.getElementById('historyForm').addEventListener('submit', async function(event) {
         event.preventDefault();
 
         const form = event.target;
         const formData = new FormData(form);
         const url = form.action;
 
-        // Mostramos un indicador de carga
+        // 1. OFFLINE HANDLING
+        if (!navigator.onLine && window.recisaOffline) {
+            try {
+                await window.recisaOffline.savePendingUpload(url, formData);
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Guardado Offline',
+                    text: 'El documento se subirá automáticamente cuando recuperes la conexión.',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+                
+                // Close modal
+                const historyModal = bootstrap.Modal.getInstance(document.getElementById('historyModal'));
+                historyModal.hide();
+                
+                // Clear inputs
+                form.reset();
+                document.getElementById("files-list").innerHTML = "";
+                document.getElementById("num-of-files").textContent = "No ha seleccionado ningún archivo";
+                
+            } catch (error) {
+                console.error('Offline save error:', error);
+                Swal.fire('Error', 'No se pudo guardar localmente.', 'error');
+            }
+            return;
+        }
+
+        // 2. ONLINE HANDLING
         Swal.fire({
             title: 'Guardando cambios...',
             text: 'Por favor, espere.',
@@ -453,6 +481,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Cerramos el modal
                 const historyModal = bootstrap.Modal.getInstance(document.getElementById('historyModal'));
                 historyModal.hide();
+                
+                // Clear inputs
+                form.reset();
+                document.getElementById("files-list").innerHTML = "";
+                document.getElementById("num-of-files").textContent = "No ha seleccionado ningún archivo";
 
             } else {
                 // Manejar errores de validación u otros
@@ -463,11 +496,92 @@ document.addEventListener('DOMContentLoaded', function() {
                 Swal.fire('Error', errorText, 'error');
             }
         })
-        .catch(error => {
+        .catch(async error => {
             console.error('Error al enviar el formulario:', error);
-            Swal.fire('Error de Red', 'No se pudo conectar con el servidor.', 'error');
+            
+            // FALLBACK: Si falla la conexión, intentar guardar offline
+            if (window.recisaOffline) {
+                try {
+                    console.log('Intentando guardar offline tras error de red...');
+                    await window.recisaOffline.savePendingUpload(url, formData);
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Guardado Offline',
+                        text: 'Hubo un error de conexión, pero el archivo se guardó localmente y se subirá después.',
+                        timer: 4000
+                    });
+                    
+                    // Close modal & reset
+                    const historyModal = bootstrap.Modal.getInstance(document.getElementById('historyModal'));
+                    historyModal.hide();
+                    form.reset();
+                    document.getElementById("files-list").innerHTML = "";
+                    document.getElementById("num-of-files").textContent = "No ha seleccionado ningún archivo";
+                    return;
+                } catch (offlineError) {
+                    console.error('Error al guardar offline:', offlineError);
+                    Swal.fire('Error', 'No se pudo guardar localmente: ' + (offlineError.message || offlineError), 'error');
+                }
+            }
+            
+            Swal.fire('Error de Red', 'No se pudo conectar con el servidor y no se pudo guardar localmente.', 'error');
         });
     });
 });
+
+// ✅ MOVER ESTA FUNCIÓN AL SCOPE GLOBAL
+function loadExistingFiles(patientId) {
+    const fileListContainer = document.getElementById('existingFilesList');
+    fileListContainer.innerHTML = '<p class="text-center text-muted">Cargando documentos...</p>';
+    
+    // Offline Check
+    if (!navigator.onLine) {
+        fileListContainer.innerHTML = `
+            <div class="alert alert-warning text-center">
+                <i class="fas fa-wifi-slash"></i><br>
+                Modo Offline<br>
+                <small>No se pueden ver documentos antiguos sin conexión, pero puedes subir nuevos.</small>
+            </div>
+        `;
+        return;
+    }
+    
+    fetch(`{{ url('recisa/patients/get-files') }}/${patientId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('✅ Respuesta del servidor:', data);
+            fileListContainer.innerHTML = '';
+            
+            if (data.success && data.files && data.files.length > 0) {
+                data.files.forEach(file => {
+                    const fileItem = `
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-file-pdf text-danger me-2"></i> ${file.name}</span>
+                            <div>
+                                <a href="${file.url}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteFile(event, ${file.id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    fileListContainer.innerHTML += fileItem;
+                });
+            } else {
+                fileListContainer.innerHTML = '<p class="text-center text-muted">No hay documentos para este paciente.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error al cargar archivos:', error);
+            fileListContainer.innerHTML = `<p class="text-center text-danger">Error: ${error.message}</p>`;
+        });
+}
 </script>
 @endpush

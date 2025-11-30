@@ -101,7 +101,12 @@
                     </div>
                 </div>
             </div>            
-        </div>   
+        </div>
+
+        {{-- 📡 OFFLINE MODE INDICATOR --}}
+        <div id="offline-mode-indicator" class="alert alert-warning shadow mt-3" style="display: none;">
+            <i class="fas fa-wifi-slash"></i> <strong>Modo Offline:</strong> Estás viendo datos guardados. Las acciones se sincronizarán cuando vuelva la conexión.
+        </div>
     @endsection
     @push('js')
         <script>
@@ -127,6 +132,185 @@
                         "previous":"<"
                     }
                 }
+            });
+
+            // 📡 LÓGICA DE ASISTENCIA OFFLINE
+            document.addEventListener('DOMContentLoaded', function() {
+                const offlineIndicator = document.getElementById('offline-mode-indicator');
+                const tableBody = document.querySelector('#especialidades tbody');
+
+                // Mostrar/ocultar indicador y cargar datos offline
+                async function toggleOfflineMode() {
+                    if (!navigator.onLine) {
+                        offlineIndicator.style.display = 'block';
+                        await renderOfflineTable();
+                    } else {
+                        offlineIndicator.style.display = 'none';
+                        // Si vuelve online, recargar para tener datos frescos del servidor
+                        // pero solo si estábamos offline antes (para evitar recargas infinitas)
+                        if(offlineIndicator.dataset.wasOffline === 'true'){
+                             window.location.reload();
+                        }
+                    }
+                    offlineIndicator.dataset.wasOffline = !navigator.onLine;
+                }
+
+                // Renderizar tabla desde IndexedDB
+                async function renderOfflineTable() {
+                    if (!window.recisaOffline) return;
+
+                    try {
+                        const data = await window.recisaOffline.getDoctorAppointments();
+                        if (data && data.appointments) {
+                            console.log('[Doctor Offline] Rendering table with', data.appointments.length, 'appointments');
+                            
+                            // Limpiar tabla actual (que podría estar vacía o con error)
+                            // Nota: DataTables puede complicar esto, así que destruimos y recreamos si es necesario
+                            // Por simplicidad, manipulamos el DOM directo si DataTables falla o para asegurar visualización
+                            
+                            let html = '';
+                            data.appointments.forEach((appt, index) => {
+                                html += `
+                                    <tr>
+                                        <td style="text-align: left">${index + 1}</td>
+                                        <td style="text-align: left">${appt.patient.names} ${appt.patient.surnames}</td>
+                                        <td style="text-align: left">${appt.doctor.specialization.name}</td>
+                                        <td style="text-align: left">${appt.date}</td>
+                                        <td style="text-align: left">${appt.time}</td>
+                                        <td class="text-center">
+                                            <div class="btn-group" role="group">
+                                                <a href="/doctor/attend/edit/${appt.id}" class="btn btn-primary" style="background: #F4D03F !important;">
+                                                    <i class="fa-solid fa-eye"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                            
+                            // Si DataTables está activo, usar su API, sino HTML directo
+                            if ($.fn.DataTable.isDataTable('#especialidades')) {
+                                $('#especialidades').DataTable().destroy();
+                            }
+                            tableBody.innerHTML = html;
+                            // Re-inicializar DataTables (opcional, o dejar como tabla simple offline)
+                        } else {
+                            console.log('[Doctor Offline] No cached appointments found');
+                            tableBody.innerHTML = '<tr><td colspan="6" class="text-center">No hay datos offline disponibles. Conéctate para sincronizar.</td></tr>';
+                        }
+                    } catch (err) {
+                        console.error('[Doctor Offline] Error rendering table:', err);
+                    }
+                }
+
+                // Listeners
+                window.addEventListener('online', toggleOfflineMode);
+                window.addEventListener('offline', toggleOfflineMode);
+                
+                // Check inicial
+                toggleOfflineMode();
+            });
+            
+            // 📥 AUTOMATIC REAL-TIME SYNC
+            document.addEventListener('DOMContentLoaded', function() {
+                let lastDataHash = ''; // Para detectar cambios
+
+                // Función principal de sincronización
+                async function syncOfflineData() {
+                    if (!navigator.onLine || !window.recisaOffline) return;
+
+                    try {
+                        // 1. Fetch JSON data with cache busting
+                        const response = await fetch('/doctor/citas/list/json?t=' + Date.now(), {
+                            headers: { 'Accept': 'application/json' }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            
+                            // Simple hash detection (JSON stringify)
+                            const currentHash = JSON.stringify(data.appointments);
+                            const hasChanges = currentHash !== lastDataHash;
+                            
+                            if (hasChanges) {
+                                console.log('[Doctor] New data detected, syncing...');
+                                await window.recisaOffline.saveDoctorAppointments(data);
+                                lastDataHash = currentHash;
+
+                                // 2. Prefetch detail pages (HTML) and PDFs
+                                if (data.appointments && data.appointments.length > 0) {
+                                    const promises = [];
+                                    let newContentDownloaded = false;
+
+                                    // A. Detail Pages (HTML)
+                                    data.appointments.forEach(appt => {
+                                        const url = `/doctor/attend/edit/${appt.id}`;
+                                        promises.push(fetch(url, { priority: 'low' }).catch(() => {}));
+                                        
+                                        // B. Clinical History PDFs
+                                        if (appt.patient && appt.patient.clinical_histories) {
+                                            appt.patient.clinical_histories.forEach(hist => {
+                                                // Use the authoritative URL from backend if available, otherwise fallback
+                                                let pdfUrl = hist.full_url || `/storage/${hist.source_pdf}`;
+                                                
+                                                // CRITICAL: Normalize to absolute URL to match show.blade.php (this.href)
+                                                try {
+                                                    pdfUrl = new URL(pdfUrl, window.location.origin).href;
+                                                } catch (e) {
+                                                    console.error('Invalid URL:', pdfUrl);
+                                                }
+                                                
+                                                if (pdfUrl) {
+                                                    promises.push(async () => {
+                                                        try {
+                                                            // Check cache first
+                                                            const cached = await window.recisaOffline.getClinicalHistory(pdfUrl);
+                                                            if (!cached) {
+                                                                console.log('[Doctor] Downloading new PDF:', pdfUrl);
+                                                                const resp = await fetch(pdfUrl, { priority: 'low' });
+                                                                if (resp.ok) {
+                                                                    const blob = await resp.blob();
+                                                                    await window.recisaOffline.saveClinicalHistory(pdfUrl, blob);
+                                                                    newContentDownloaded = true;
+                                                                } else {
+                                                                    console.error('[Doctor] Failed to download PDF:', pdfUrl, resp.status);
+                                                                }
+                                                            }
+                                                        } catch (e) { console.error('PDF error', e); }
+                                                    });
+                                                }
+                                            });
+                                        }
+                                    });
+                                    
+                                    // Execute all
+                                    const finalPromises = promises.map(p => typeof p === 'function' ? p() : p);
+                                    await Promise.allSettled(finalPromises);
+
+                                    // Notify only if something new was actually downloaded or list changed significantly
+                                    if (newContentDownloaded || hasChanges) {
+                                        const Toast = Swal.mixin({
+                                            toast: true,
+                                            position: "top-end",
+                                            showConfirmButton: false,
+                                            timer: 3000,
+                                            timerProgressBar: true
+                                        });
+                                        Toast.fire({ icon: "success", title: "Datos sincronizados automáticamente" });
+                                    }
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('[Doctor] Auto-sync error:', error);
+                    }
+                }
+
+                // Initial sync
+                syncOfflineData();
+
+                // Poll every 15 seconds
+                setInterval(syncOfflineData, 15000);
             });
         </script>    
     @endpush

@@ -16,16 +16,20 @@ class AdminOrSecretaryMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if(Auth::check() && Auth::user()->status == 1 && Auth::user()->group->group_status == 1){
-            if(Auth::user()->user_level==1 || Auth::user()->user_level == 2){
+        if(!Auth::check()){
+            return redirect(url('/login'));
+        }
+
+        $user = Auth::user();
+
+        if($user->status == 1 && $user->group && $user->group->group_status == 1){
+            if($user->user_level == 1 || $user->user_level == 2){
                 return $next($request);
             }else{  
-                Auth::logout();
-                return redirect(url('/401'));
+                return redirect(url('/401'))->with('error', 'No tienes permisos suficientes');
             } 
         }else{
-            Auth::logout();
-            return redirect(url('/401'));
+            return redirect(url('/401'))->with('error', 'Tu cuenta no está activa');
         }
     }
 }

@@ -172,7 +172,7 @@
                                             <td class="text-center">{{$clinical_history->datetime_created}}</td>
                                             <td class="text-center">
                                                 <a class="btn btn-primary btn-sm d-none d-sm-inline-block" role="button" target="_blank"
-                                                    href="{{Storage::url('public/clinical_histories/'.$clinical_history->source_pdf)}}"
+                                                    href="{{Storage::url($clinical_history->source_pdf)}}"
                                                     style="--bs-primary: #00486E;--bs-primary-rgb: 0,72,110;--bs-body-bg: #00476D;background: #00476D !important;">
                                                     <i class="fas fa-download fa-sm text-white-50"></i>&nbsp;Ver historial
                                                 </a>
@@ -209,5 +209,72 @@
             // Agrega el event listener al select para cambiar la visibilidad del div que contiene el textarea
             document.getElementById('status').addEventListener('change', toggleTextarea);
         };
+
+        // 📄 OFFLINE PDF HANDLING
+        document.addEventListener('DOMContentLoaded', function() {
+            const pdfLinks = document.querySelectorAll('a[href*="clinical_histories"]');
+            
+            pdfLinks.forEach(link => {
+                link.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    const url = this.href;
+                    
+                    // Mostrar indicador de carga
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
+                    
+                    try {
+                        // 1. Intentar obtener de IndexedDB
+                        if (window.recisaOffline) {
+                            let cachedBlob = await window.recisaOffline.getClinicalHistory(url);
+                            
+                            // Fallback: Intentar con ruta relativa si no encuentra la absoluta (para compatibilidad)
+                            if (!cachedBlob) {
+                                try {
+                                    const relativeUrl = new URL(url).pathname;
+                                    console.log('[PDF] Intentando fallback relativo:', relativeUrl);
+                                    cachedBlob = await window.recisaOffline.getClinicalHistory(relativeUrl);
+                                } catch (e) {}
+                            }
+
+                            if (cachedBlob) {
+                                console.log('[PDF] Abriendo desde caché offline');
+                                const blobUrl = URL.createObjectURL(cachedBlob);
+                                window.open(blobUrl, '_blank');
+                                this.innerHTML = originalText;
+                                return;
+                            }
+                        }
+                        
+                        // 2. Si no está en caché, intentar descargar (si hay internet)
+                        if (navigator.onLine) {
+                            console.log('[PDF] Descargando y cacheando...');
+                            const response = await fetch(url);
+                            if (response.ok) {
+                                const blob = await response.blob();
+                                
+                                // Guardar en IndexedDB para la próxima
+                                if (window.recisaOffline) {
+                                    await window.recisaOffline.saveClinicalHistory(url, blob);
+                                }
+                                
+                                const blobUrl = URL.createObjectURL(blob);
+                                window.open(blobUrl, '_blank');
+                            } else {
+                                alert('Error al descargar el archivo.');
+                            }
+                        } else {
+                            alert('⚠️ Sin conexión y el archivo no está guardado localmente.\nURL: ' + url);
+                        }
+                    } catch (error) {
+                        console.error('[PDF] Error:', error);
+                        // Fallback: intentar abrir normal si falla todo
+                        window.open(url, '_blank');
+                    } finally {
+                        this.innerHTML = originalText;
+                    }
+                });
+            });
+        });
     </script>
 @endpush

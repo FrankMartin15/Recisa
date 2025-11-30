@@ -289,7 +289,7 @@
 <!-- Bootstrap Select JS -->
 <script src="{{ asset('assets/js/bootstrap-select.min.js') }}"></script>
 <!-- Offline Manager JS (versión corregida) -->
-<script src="{{ asset('assets/js/offline-manager.js?v=' . time()) }}"></script>
+<script src="{{ asset('assets/js/offline-manager.v62.js') }}"></script>
 
 <script>
 $(document).ready(function() {

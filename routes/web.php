@@ -104,6 +104,9 @@ Route::group(['middleware'=>'admin'],function(){
     //delete get
     Route::get('admin/assignment/delete/{id}',[UserSpecializationController::class,'delete']);
 
+    //Ruta para notificaciones de cupos (Polling)
+    Route::get('admin/notifications/quota-check', [AdminController::class, 'quotaCheck']);
+
 });
 Route::group(['middleware'=>'secretary'],function(){
     //La vista del dashbaord

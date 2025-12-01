@@ -197,4 +197,24 @@ class AdminController extends Controller
         return response($mpdf->Output('reporte_doctor.pdf', 'I')) // 'I' para Inline, 'D' para Descargar
             ->header('Content-Type', 'application/pdf');  
     }  
+    public function quotaCheck()
+    {
+        $doctors = UserSpecialization::where('cupo_doctor', 0)
+            ->with(['user', 'specialization'])
+            ->get()
+            ->map(function ($quota) {
+                return [
+                    'id' => $quota->user->id,
+                    'name' => $quota->user->names . ' ' . $quota->user->surnames,
+                    'specialization' => $quota->specialization->name,
+                    'image' => $quota->user->image,
+                    'status' => $quota->user->status
+                ];
+            });
+
+        return response()->json([
+            'count' => $doctors->count(),
+            'doctors' => $doctors
+        ]);
+    }
 }

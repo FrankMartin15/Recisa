@@ -73,6 +73,65 @@
     <script src="{{asset('assets/js/Table-With-Search.js')}}"></script>
     <script src="{{asset('assets/js/theme.js')}}"></script>
     <script src="{{ asset('assets/js/offline-manager.v62.js') }}"></script>
+    
+    <!-- Polling de Notificaciones (Solo Admin) -->
+    @if(Auth::check() && Auth::user()->user_level == 1)
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const badge = document.getElementById('notification-badge');
+            const list = document.getElementById('notification-items');
+            
+            function checkQuotas() {
+                fetch('/admin/notifications/quota-check')
+                    .then(response => response.json())
+                    .then(data => {
+                        // Actualizar contador
+                        if(badge) badge.textContent = data.count;
+                        
+                        // Actualizar lista
+                        if(list && data.doctors.length > 0) {
+                            let html = '';
+                            data.doctors.forEach(doctor => {
+                                let imgUrl = doctor.image 
+                                    ? `/storage/perfiles/${doctor.image}` 
+                                    : 'https://i.postimg.cc/hjSBbZX4/doctor.png';
+                                
+                                let statusClass = doctor.status == '1' ? 'bg-success' : 'bg-warning';
+                                
+                                html += `
+                                    <a class="dropdown-item d-flex align-items-center" href="#">
+                                        <div class="dropdown-list-image me-3">
+                                            <img class="border rounded-circle img-profile" 
+                                                 src="${imgUrl}" 
+                                                 style="width:40px;height:40px;object-fit:cover;"
+                                                 onerror="this.src='https://i.postimg.cc/hjSBbZX4/doctor.png';">
+                                            <div class="${statusClass} status-indicator"></div>
+                                        </div>
+                                        <div class="fw-bold">
+                                            <div class="text-truncate">
+                                                <span>${doctor.specialization}</span>
+                                                <span>${doctor.name}</span>
+                                            </div>
+                                            <p class="small text-gray-500 mb-0">Cupos: 0</p>
+                                        </div>
+                                    </a>
+                                `;
+                            });
+                            list.innerHTML = html;
+                        } else if (list) {
+                            list.innerHTML = '<p class="text-center small text-gray-500 my-3">No hay alertas</p>';
+                        }
+                    })
+                    .catch(error => console.error('Error polling quotas:', error));
+            }
+
+            // Ejecutar cada 60 segundos
+            setInterval(checkQuotas, 60000);
+            // Ejecutar al cargar también (opcional, para refrescar si es cacheado)
+            // checkQuotas(); 
+        });
+    </script>
+    @endif
     <!--Anderson-->
 
     <!--JS bar-->

@@ -39,7 +39,7 @@
                     <div class="nav-item dropdown no-arrow">
                         <a class="dropdown-toggle nav-link" aria-expanded="false" data-bs-toggle="dropdown"
                             href="#">
-                            <span class="badge bg-danger badge-counter">{{ $cupo ?? 0 }}</span>
+                            <span class="badge bg-danger badge-counter" id="notification-badge">{{ $cupo ?? 0 }}</span>
                             <svg style="width: 24px; height: 24px;" xmlns="http://www.w3.org/2000/svg"
                                 viewBox="0 0 448 512">
                                 <path fill="#9b9b9b"
@@ -48,6 +48,7 @@
                         </a>
                         <div class="dropdown-menu dropdown-menu-end dropdown-list animated--grow-in">
                             <h6 class="dropdown-header">Doctores sin cupos</h6>
+                            <div id="notification-items">
                             @if (isset($doctors))
                                 @foreach ($doctors as $doctor)
                                     <a class="dropdown-item d-flex align-items-center" href="#">
@@ -83,6 +84,7 @@
                                     </a>
                                 @endforeach
                             @endif
+                            </div>
                             <a class="dropdown-item text-center small text-gray-500" href="#">Ver Todas</a>
                         </div>
                     </div>

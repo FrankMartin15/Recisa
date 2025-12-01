@@ -157,7 +157,7 @@
                             <h6 class="text-muted fw-bold mb-3">Subir Nuevos Documentos</h6>
                             {{-- TU DISEÑO DE SUBIDA DE ARCHIVOS --}}
                             <div class="container_files">
-                                <input type="file" id="file-input" name="files[]" accept=".pdf,.jpg,.jpeg,.png" multiple />
+                                <input type="file" class="form-control" id="file-input" name="files[]" multiple accept="application/pdf" />
                                 <label for="file-input" class="label">
                                     <i class="fa-solid fa-arrow-up-from-bracket"></i>
                                       Seleccione archivos a subir(Max. 3Mb)
@@ -418,7 +418,16 @@ document.addEventListener('DOMContentLoaded', function() {
         event.preventDefault();
 
         const form = event.target;
-        const formData = new FormData(form);
+        // Validar que solo sean PDFs
+        const files = fileInput.files;
+        for (let i = 0; i < files.length; i++) {
+            if (files[i].type !== 'application/pdf') {
+                Swal.fire('Error', 'Solo se permiten archivos PDF.', 'error');
+                return;
+            }
+        }
+
+        const formData = new FormData(this);
         const url = form.action;
 
         // 1. OFFLINE HANDLING

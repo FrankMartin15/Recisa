@@ -24,11 +24,17 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            'dni' => fake()->unique()->numerify('########'),
+            'names' => substr(fake()->firstName(), 0, 25),
+            'surnames' => substr(fake()->lastName() . ' ' . fake()->lastName(), 0, 25),
+            'phone' => fake()->unique()->numerify('9########'),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'user_level' => 4, // Default to Patient or lowest level
+            'status' => 'A',
+            'image' => null,
         ];
     }
 

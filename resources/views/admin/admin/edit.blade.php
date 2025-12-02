@@ -112,6 +112,7 @@
                                         <span class="fa fa-eye-slash icon"></span>
                                     </button>
                                 </div>
+                                <small class="text-muted" style="font-size: 0.75rem;">* Min. 8 caracteres, números y símbolos.</small>
                             </div>
                             <div class="col-md-6">
                                 <div class="input-group">
@@ -124,6 +125,61 @@
                                     </button>
                                 </div>
                             </div>
+                            <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    const passwordInput = document.getElementById('password');
+                                    const confirmInput = document.getElementById('password_confirm');
+                                    const submitBtn = document.querySelector('button[type="submit"]');
+
+                                    function validateComplexity(password) {
+                                        // 8 chars, number, special, uppercase
+                                        const hasLength = password.length >= 8;
+                                        const hasNumber = /\d/.test(password);
+                                        const hasSpecial = /[@$!%*?&]/.test(password);
+                                        const hasUpper = /[A-Z]/.test(password);
+                                        return hasLength && hasNumber && hasSpecial && hasUpper;
+                                    }
+
+                                    function updateBorder(element, isValid, isEmpty) {
+                                        if (isEmpty) {
+                                            element.style.borderColor = '#ced4da'; // Default Bootstrap gray
+                                        } else if (isValid) {
+                                            element.style.borderColor = '#198754'; // Bootstrap Success Green
+                                        } else {
+                                            element.style.borderColor = '#dc3545'; // Bootstrap Danger Red
+                                        }
+                                    }
+
+                                    function updateFormState() {
+                                        const passVal = passwordInput.value;
+                                        const confirmVal = confirmInput.value;
+                                        
+                                        const isPassEmpty = passVal.length === 0;
+                                        const isConfirmEmpty = confirmVal.length === 0;
+
+                                        // 1. Validate Password Complexity
+                                        const isComplexityValid = validateComplexity(passVal);
+                                        updateBorder(passwordInput, isComplexityValid, isPassEmpty);
+
+                                        // 2. Validate Match
+                                        // Match is valid if equal AND complexity is also valid (to avoid matching two invalid passwords)
+                                        const isMatchValid = (passVal === confirmVal) && isComplexityValid;
+                                        // Only show red on confirm if it doesn't match OR if password itself is invalid
+                                        updateBorder(confirmInput, isMatchValid, isConfirmEmpty);
+
+                                        // 3. Button State
+                                        // Enable if both empty (no change) OR both valid
+                                        if (isPassEmpty && isConfirmEmpty) {
+                                            submitBtn.disabled = false;
+                                        } else {
+                                            submitBtn.disabled = !(isComplexityValid && isMatchValid);
+                                        }
+                                    }
+
+                                    passwordInput.addEventListener('input', updateFormState);
+                                    confirmInput.addEventListener('input', updateFormState);
+                                });
+                            </script>
                             <div class="col-md-12 text-center">
                                 <button type="submit" class="btn btn-primary"
                                     style="background-color: #00476D !important;">Guardar</button>

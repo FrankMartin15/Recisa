@@ -92,7 +92,7 @@
                             </button>
                         </div>
                     </div>
-                    <form action="{{ route('patients.store') }}" method="POST" id="patientForm">
+                    <form action="{{ url('/recisa/patients/add') }}" method="POST" id="patientForm">
                         @csrf
                         <div class="row g-3">
                             <div class="col-md-2">

@@ -151,6 +151,17 @@ class AdminController extends Controller
     
     public function delete($id){
         $user=User::find($id);
+
+        // Verificar si el doctor tiene citas asignadas
+        $hasAppointments = UserSpecialization::where('id_user', $id)
+            ->whereHas('appointment')
+            ->exists();
+
+        if ($hasAppointments) {
+            return redirect('admin/admin/list')
+                ->with('error', 'No se puede eliminar el usuario porque tiene citas asignadas. Elimine las citas primero.');
+        }
+
         $user->delete();
         return redirect('admin/admin/list')->with('success','El Usuario '.$user->names.' fue eliminado'); 
     }

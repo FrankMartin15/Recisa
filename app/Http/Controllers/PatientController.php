@@ -192,6 +192,13 @@ class PatientController extends Controller
     public function delete($id)
     {
         $patient = Patient::find($id);
+
+        // Verificar si el paciente tiene citas
+        if ($patient->appointments()->exists()) {
+            return redirect('recisa/patients/list')
+                ->with('error', 'No se puede eliminar el paciente porque tiene citas registradas. Elimine las citas primero.');
+        }
+
         $patient->delete();
         return redirect('recisa/patients/list')->with('success', 'El paciente ' . $patient->names . ' fue eliminado');
     }

@@ -27,7 +27,8 @@ const STATIC_ASSETS = [
     '/assets/js/dataTables.bootstrap5.js',
     '/assets/js/jquery.dataTables.min.js',
     '/assets/js/dataTables.bootstrap.min.js',
-    '/assets/js/menu_bar.js'
+    '/assets/js/menu_bar.js',
+    '/offline.html' // <--- Added offline fallback page
     // NOTE: Dynamic HTML pages are NOT included here to prevent install failures.
     // They will be cached at runtime via networkFirst strategy.
 ];
@@ -75,6 +76,10 @@ const networkFirst = async (request, cacheName) => {
         const cachedResponse = await caches.match(request);
         if (cachedResponse) {
             return cachedResponse;
+        }
+        // Fallback to offline.html for navigation requests
+        if (request.mode === 'navigate') {
+            return caches.match('/offline.html');
         }
         throw error;
     }

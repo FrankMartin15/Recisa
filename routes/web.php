@@ -104,9 +104,6 @@ Route::group(['middleware'=>'admin'],function(){
     //delete get
     Route::get('admin/assignment/delete/{id}',[UserSpecializationController::class,'delete']);
 
-    //Ruta para notificaciones de cupos (Polling)
-    Route::get('admin/notifications/quota-check', [AdminController::class, 'quotaCheck']);
-
 });
 Route::group(['middleware'=>'secretary'],function(){
     //La vista del dashbaord
@@ -118,10 +115,8 @@ Route::group(['middleware'=>'doctor'],function(){
     //La vista del dashbaord
     Route::get('doctor/dashboard',[DashboardController::class,'dashboard']);
     Route::get('doctor/citas/list',[DoctorController::class,'index']);
-    Route::get('doctor/citas/list/json',[DoctorController::class,'listJson']); // API JSON para offline
     Route::get('doctor/attend/edit/{appointment}',[DoctorController::class,'edit']);
     Route::post('doctor/attend/edit/{appointment}',[DoctorController::class,'update']);
-    Route::post('doctor/attendance/offline-sync', [DoctorController::class, 'syncOfflineAttendance']);
 });
 //Admin y la secretaria comparten las rutas para poder generar el proceso de citas
 Route::group(['middleware'=>'admin_or_secretary'],function(){
@@ -136,10 +131,6 @@ Route::group(['middleware'=>'admin_or_secretary'],function(){
     Route::get('/recisa/patients/edit/{slug}',[PatientController::class,'edit']);
     Route::post('/recisa/patients/edit/{slug}',[PatientController::class,'update']);
     Route::get('/recisa/patients/delete/{id}',[PatientController::class,'delete']);
-    //Gestión de archivos del historial clínico
-    Route::get('/recisa/patients/get-files/{id}',[PatientController::class,'getPatientFiles']);
-    Route::post('/recisa/patients/history/{id}',[PatientController::class,'updateHistory']);
-    Route::post('/recisa/files/delete/{id}',[PatientController::class,'deleteFile']);
     //Buscar el paciente
     Route::post('/recisa/clinicalhistories/sheare-patient', [ClinicalHistoryController::class, 'shearePatient']);
     //Rutas para el historila clinico

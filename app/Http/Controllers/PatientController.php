@@ -176,14 +176,20 @@ class PatientController extends Controller
         $patient = Patient::all()->firstWhere(function ($patient) use ($generatedSlug) {
             return $patient->slug === $generatedSlug;
         });
+        if (empty($patient)) {
+            return view('page.404');
+        }
         // Validaciones
         request()->validate([
             'dni' => 'required|regex:/^[0-9]{8}$/|unique:patients,dni,' . $patient->id,
-            'phone' => 'required|regex:/^[0-9]{9}$/|unique:patients,phone,' . $patient->id
+            'phone' => 'required|regex:/^[0-9]{9}$/|unique:patients,phone,' . $patient->id,
+            'date' => 'nullable|date',
         ]);
 
         // Actualizar campos del paciente
         $patient->phone = $request->phone;
+        // Guardar fecha de nacimiento en la columna 'age'
+        $patient->age = $request->filled('date') ? $request->date : null;
 
         $patient->save();
         return redirect('recisa/patients/list')->with('success', 'El paciente ' . $patient->names . ' fue actualizado');

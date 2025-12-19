@@ -68,8 +68,8 @@
                             </div>
                             <div class="col-md-3">
                                 <label for="date" class="form-label">Fecha Nacimiento</label>
-                                <input readonly type="date" name="date" id="date" class="form-control"
-                                    value="{{ $patient->age ? $patient->age->format('Y-m-d') : '' }}">
+                                <input type="date" name="date" id="date" class="form-control"
+                                    value="{{ old('date', $patient->age ? $patient->age->format('Y-m-d') : '') }}">
                             </div>
                             <div class="col-md-12 text-center">
                                 <button type="submit" class="btn btn-primary"

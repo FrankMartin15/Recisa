@@ -66,7 +66,13 @@
                                         <td style="text-align: left;">{{ $patient->names }}, {{ $patient->surnames }}</td>
                                         <td style="text-align: left;">{{ $patient->history_number }}</td>
                                         <td style="text-align: left;">{{ $patient->phone }}</td>
-                                        <td style="text-align: left;">{{ $patient->calculated_age }} años</td>
+                                        <td style="text-align: left;">
+                                            @if($patient->calculated_age === 'N/A')
+                                                -
+                                            @else
+                                                {{ $patient->calculated_age }} años
+                                            @endif
+                                        </td>
                                         <td>{{ date('d-m-Y', strtotime($patient->created_at)) }}</td>
                                         @if (Auth::user()->user_level != 3)
                                             <td class="text-center">

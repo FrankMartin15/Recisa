@@ -113,8 +113,10 @@
                             </div>
                             <div class="col-md-3">
                                 <label for="phone" class="form-label">Número Historial:</label>
-                                <input class="form-control" maxlength="10" minlength="10" type="text"
-                                     name="history_number" id="history_number" value="{{ old('history_number') }}">
+                                  <input class="form-control" maxlength="6" minlength="6" type="text"
+                                      inputmode="numeric" pattern="\d{6}" autocomplete="off"
+                                      name="history_number" id="history_number" value="{{ old('history_number') }}"
+                                      oninput="this.value=this.value.replace(/\D/g,'').slice(0,6);">
                             </div>
                             <div class="col-md-2">
                                 <label for="phone" class="form-label">Celular:</label>

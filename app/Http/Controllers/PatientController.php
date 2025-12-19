@@ -44,7 +44,7 @@ class PatientController extends Controller
                         'names' => 'required|string|max:255',
                         'surnames' => 'required|string|max:255',
                         'phone' => 'nullable|string|max:15',
-                        'history_number' => 'nullable|string|max:50',
+                        'history_number' => 'nullable|digits:6',
                         'date' => 'nullable|date',
                     ]);
                 } else {
@@ -348,7 +348,7 @@ class PatientController extends Controller
     {
         // 1. Validación
         $request->validate([
-            'history_number' => 'required|string|max:10|unique:patients,history_number,' . $id,
+            'history_number' => 'required|digits:6|unique:patients,history_number,' . $id,
             'files.*' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:2048'
         ]);
 

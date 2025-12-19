@@ -70,6 +70,7 @@ class Kernel extends HttpKernel
         'secretary' => \App\Http\Middleware\SecretaryMiddleware::class,  
         'doctor' => \App\Http\Middleware\DoctorMiddleware::class,  
         'admin_or_secretary' => \App\Http\Middleware\AdminOrSecretaryMiddleware::class,    
+        'admin_or_secretary_or_doctor' => \App\Http\Middleware\AdminOrSecretaryOrDoctorMiddleware::class,
         'profile' => \App\Http\Middleware\ProfileMiddleware::class,    
     ];
 }

@@ -118,40 +118,54 @@ Route::group(['middleware'=>'doctor'],function(){
     Route::get('doctor/attend/edit/{appointment}',[DoctorController::class,'edit']);
     Route::post('doctor/attend/edit/{appointment}',[DoctorController::class,'update']);
 });
-//Admin y la secretaria comparten las rutas para poder generar el proceso de citas
-Route::group(['middleware'=>'admin_or_secretary'],function(){
-    //Rutas para crear los pacientes
-    //La vista de los pacientes
-    Route::get('/recisa/patients/list',[PatientController::class,'list']);
-    Route::get('/recisa/patients/list/json',[PatientController::class,'listJson']); // API JSON para IndexedDB
-    Route::get('/recisa/patients/add',[PatientController::class,'add']);
+// Admin, secretaria y doctor: módulos operativos (registrar/listar pacientes y citas)
+Route::group(['middleware' => 'admin_or_secretary_or_doctor'], function () {
+    // Pacientes
+    Route::get('/recisa/patients/list', [PatientController::class, 'list']);
+    Route::get('/recisa/patients/list/json', [PatientController::class, 'listJson']); // API JSON para IndexedDB
+    Route::get('/recisa/patients/add', [PatientController::class, 'add']);
     Route::post('/recisa/patients/add-consulta', [DNIController::class, 'consultarDNI']);
-    Route::post('/recisa/patients/add',[PatientController::class,'insert']);
-    Route::post('/recisa/patients/insert',[PatientController::class,'insert']); // API para IndexedDB
-    Route::get('/recisa/patients/edit/{slug}',[PatientController::class,'edit']);
-    Route::post('/recisa/patients/edit/{slug}',[PatientController::class,'update']);
-    Route::get('/recisa/patients/delete/{id}',[PatientController::class,'delete']);
-    //Buscar el paciente
+    Route::post('/recisa/patients/add', [PatientController::class, 'insert']);
+    Route::post('/recisa/patients/insert', [PatientController::class, 'insert']); // API para IndexedDB
+
+    // Citas
+    Route::get('/recisa/appoitnment/list', [AppointmentController::class, 'list']);
+    Route::get('/recisa/appointments/list/json', [AppointmentController::class, 'listJson']); // API JSON para IndexedDB
+    Route::get('/recisa/appoitnment/add', [AppointmentController::class, 'add']);
+    Route::post('/recisa/appoitnment/add', [AppointmentController::class, 'insert']);
+    // Alias: algunos formularios/offline usan esta URL
+    Route::post('/recisa/appointments/add', [AppointmentController::class, 'insert']);
+    Route::post('/recisa/appointments/insert', [AppointmentController::class, 'insert']); // API para IndexedDB
+    Route::get('/recisa/appoitnment/show/{appointment}', [AppointmentController::class, 'show']);
+
+    // Reporte de citas (PDF)
+    Route::get('/recisa/appointments/reporte', [AppointmentController::class, 'reporte']);
+});
+
+// Admin y secretaria: acciones administrativas / reportes
+Route::group(['middleware' => 'admin_or_secretary'], function () {
+    // Pacientes (edición/eliminación/reportes)
+    Route::get('/recisa/patients/edit/{slug}', [PatientController::class, 'edit']);
+    Route::post('/recisa/patients/edit/{slug}', [PatientController::class, 'update']);
+    Route::get('/recisa/patients/delete/{id}', [PatientController::class, 'delete']);
+    Route::get('/recisa/patients/reporte', [PatientController::class, 'reporte']);
+    Route::get('/recisa/patients/reporte/{dni}', [PatientController::class, 'report_patient']);
+
+    // Buscar el paciente
     Route::post('/recisa/clinicalhistories/sheare-patient', [ClinicalHistoryController::class, 'shearePatient']);
-    //Rutas para el historila clinico
-    //Abrir historial
+    // Historial clínico
     Route::get('/recisa/clinicalhistories/created', [ClinicalHistoryController::class, 'add']);
     Route::get('/recisa/clinical-histories/list/json', [ClinicalHistoryController::class, 'listJson']); // API JSON para IndexedDB
-    //registrar historial
     Route::post('/recisa/clinicalhistories/created', [ClinicalHistoryController::class, 'insert']);
     Route::post('/recisa/clinical-histories/insert', [ClinicalHistoryController::class, 'insert']); // API para IndexedDB
-    //Rutas para las citas
-    Route::get('/recisa/appoitnment/list',[AppointmentController::class,'list']);
-    Route::get('/recisa/appointments/list/json',[AppointmentController::class,'listJson']); // API JSON para IndexedDB
-    Route::get('/recisa/appoitnment/add',[AppointmentController::class,'add']);
-    Route::post('/recisa/appoitnment/add',[AppointmentController::class,'insert']);
-    Route::post('/recisa/appointments/insert',[AppointmentController::class,'insert']); // API para IndexedDB
-    Route::get('/recisa/appoitnment/show/{appointment}',[AppointmentController::class,'show']);
-    //Reporte de Pacientes Total
-    Route::get('/recisa/patients/reporte',[PatientController::class,'reporte']);
-    Route::get('/recisa/patients/reporte/{dni}',[PatientController::class,'report_patient']); 
-    //Reporte de Doctores y su especialidad y pacientes
-    Route::get('/recisa/reporte/doctor',[AdminController::class, 'report_doctor']);
+
+    // Historial clínico del paciente (modal en patients/list)
+    Route::post('/recisa/patients/history/{id}', [PatientController::class, 'updateHistory']);
+    Route::get('/recisa/patients/get-files/{id}', [PatientController::class, 'getPatientFiles']);
+    Route::post('/recisa/files/delete/{fileId}', [PatientController::class, 'deleteFile']);
+
+    // Reportes
+    Route::get('/recisa/reporte/doctor', [AdminController::class, 'report_doctor']);
 });
 Route::group(['middleware'=>'profile'],function(){
     //Ruta para ver el perfil

@@ -9,6 +9,26 @@
 <link rel="stylesheet" href="{{ asset('assets/css/dataTables.bootstrap5.css') }}">
 <!--Alertas (SweetAlert2)-->
 <script src="{{ asset('assets/js/sweetalert2@11.js') }}"></script>
+
+<style>
+    /* Mejora de contraste SOLO para el select de Doctor/Especialidad */
+    #id_quota + .bootstrap-select > .dropdown-toggle {
+        background-color: #ffffff !important;
+        border-color: #ced4da !important;
+        color: #000000 !important;
+    }
+
+    #id_quota + .bootstrap-select > .dropdown-toggle .filter-option,
+    #id_quota + .bootstrap-select > .dropdown-toggle .filter-option-inner-inner {
+        color: #000000 !important;
+    }
+
+    /* En el dropdown, asegurar legibilidad de los encabezados (doctor) */
+    #id_quota + .bootstrap-select .dropdown-menu .dropdown-header {
+        color: #000000 !important;
+        font-weight: 700;
+    }
+</style>
 @endpush
 
 @section('content')
@@ -135,7 +155,7 @@
                                     <span class="input-group-text">
                                         <i class="fa-solid fa-calendar-days text-primary"></i>
                                     </span>
-                                    <input readonly type="date" name="date" id="date" class="form-control" value="{{ date('Y-m-d') }}" required>
+                                    <input type="date" name="date" id="date" class="form-control" value="{{ old('date', date('Y-m-d')) }}" required>
                                 </div>
                             </div>
                             
@@ -293,19 +313,60 @@
 
 <script>
 $(document).ready(function() {
-    // ⭐ HABILITAR/DESHABILITAR CAMPO FECHA SEGÚN MODO OFFLINE
+    // ⭐ CAMPO FECHA: SIEMPRE EDITABLE, PERO SOLO LUNES-VIERNES
+    function isWeekendDateString(dateStr) {
+        if (!dateStr) return false;
+        const d = new Date(dateStr + 'T00:00:00');
+        const day = d.getDay();
+        return day === 0 || day === 6;
+    }
+
+    function nextWeekdayFrom(dateStrOrToday) {
+        const base = dateStrOrToday
+            ? new Date(dateStrOrToday + 'T00:00:00')
+            : new Date(new Date().toISOString().split('T')[0] + 'T00:00:00');
+
+        while (base.getDay() === 0 || base.getDay() === 6) {
+            base.setDate(base.getDate() + 1);
+        }
+
+        return base.toISOString().split('T')[0];
+    }
+
+    function ensureWeekdaySelected(showAlert) {
+        const dateField = $('#date');
+        const current = dateField.val();
+
+        // Si está vacío, setear a próximo día hábil
+        if (!current) {
+            dateField.val(nextWeekdayFrom(null));
+            return;
+        }
+
+        if (isWeekendDateString(current)) {
+            const fixed = nextWeekdayFrom(current);
+            dateField.val(fixed);
+
+            if (showAlert) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Fecha no permitida',
+                    text: 'Solo se permite seleccionar fechas de lunes a viernes. Se ajustó automáticamente al próximo día hábil.',
+                });
+            }
+        }
+    }
+
     function actualizarCampoFechaSegunConexion() {
         const isOnline = navigator.onLine;
         const dateField = $('#date');
 
+        // Siempre editable; solo marcamos visualmente si está offline
+        dateField.prop('readonly', false);
         if (!isOnline) {
-            // Modo offline: habilitar campo fecha
-            dateField.prop('readonly', false);
             dateField.addClass('border-warning');
-            dateField.attr('title', 'Campo editable en modo offline');
+            dateField.attr('title', 'Modo offline: selección de fecha disponible (solo lunes a viernes)');
         } else {
-            // Modo online: mantener readonly
-            dateField.prop('readonly', true);
             dateField.removeClass('border-warning');
             dateField.removeAttr('title');
         }
@@ -326,15 +387,23 @@ $(document).ready(function() {
     // Ejecutar al cargar la página
     actualizarCampoFechaSegunConexion();
     actualizarAvisoCuposOffline();
+    ensureWeekdaySelected(false);
+
+    // Al cambiar la fecha, forzar lunes-viernes
+    $('#date').on('change', function() {
+        ensureWeekdaySelected(true);
+    });
 
     // Listeners para cambios de conexión
     window.addEventListener('online', () => {
         actualizarCampoFechaSegunConexion();
         actualizarAvisoCuposOffline();
+        ensureWeekdaySelected(false);
     });
     window.addEventListener('offline', () => {
         actualizarCampoFechaSegunConexion();
         actualizarAvisoCuposOffline();
+        ensureWeekdaySelected(false);
     });
 
     // ⭐ GUARDAR DATOS ORIGINALES
@@ -450,6 +519,9 @@ $(document).ready(function() {
     }
     
     // ⭐ FUNCIÓN MEJORADA PARA REGENERAR HORAS
+    // Horas reservadas (global dentro de este $(document).ready)
+    let reservedHours = @json($hour->pluck('time')->all() ?? []).map(time => time.slice(0, 5));
+
     function regenerarHorasDisponibles() {
         console.log('🕐 Regenerando horas disponibles...');
         
@@ -457,7 +529,6 @@ $(document).ready(function() {
         var horasManana = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00'];
         var horasTarde = ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'];
         
-        var reservedHours = @json($hour->pluck('time')->all() ?? []).map(time => time.slice(0, 5));
         console.log('⏰ Horas reservadas:', reservedHours);
         
         // Limpiar completamente el select
@@ -572,6 +643,9 @@ $(document).ready(function() {
     // ⭐ MANEJO OPTIMIZADO DEL FORMULARIO
     $('#appointment-form').on('submit', function(event) {
         event.preventDefault();
+
+        // Asegurar que la fecha enviada sea día hábil
+        ensureWeekdaySelected(true);
         
         const submitBtn = $('#submit-btn');
         const btnText = $('#btn-text');
@@ -606,7 +680,7 @@ $(document).ready(function() {
             // Restauración después del envío
             setTimeout(() => {
                 $('#appointment-form')[0].reset();
-                $('#date').val(new Date().toISOString().split('T')[0]);
+                $('#date').val(nextWeekdayFrom(null));
                 restaurarSelectPickersCompleto();
 
                 // Regenerar horas disponibles (ahora sin la hora recién reservada)
@@ -655,14 +729,32 @@ $(document).ready(function() {
 
     // ⭐ VERIFICACIÓN SIMPLE DE DUPLICADOS CADA 15 SEGUNDOS
     setInterval(function() {
-        console.log('� Verificación periódica de duplicados...');
+        // Evitar resetear mientras el usuario interactúa con los selects
+        if ($('.bootstrap-select.show').length > 0) {
+            return;
+        }
+
+        function hasEmptyOrDuplicateOptions($options) {
+            const seen = new Set();
+            for (const opt of $options) {
+                const value = (opt.value ?? '').trim();
+                if (value === '') {
+                    return true;
+                }
+                if (seen.has(value)) {
+                    return true;
+                }
+                seen.add(value);
+            }
+            return false;
+        }
 
         const quotaOptions = $('#id_quota option');
         const patientOptions = $('#id_patient option');
 
-        // Si hay demasiadas opciones (más del doble esperado), restaurar
-        if (quotaOptions.length > 20 || patientOptions.length > 40) {
-            console.log('⚠️ Demasiadas opciones detectadas, restaurando...');
+        // Solo restaurar si realmente hay opciones vacías/duplicadas
+        if (hasEmptyOrDuplicateOptions(quotaOptions) || hasEmptyOrDuplicateOptions(patientOptions)) {
+            console.log('⚠️ Opciones duplicadas/vacías detectadas, restaurando...');
             restaurarSelectPickersCompleto();
         }
     }, 15000);

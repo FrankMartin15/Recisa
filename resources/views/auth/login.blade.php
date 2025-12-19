@@ -193,15 +193,45 @@
             font-weight: 600;
             padding-left: 1rem;
         }
+
+        .form-floating .form-control.has-left-icon {
+            padding-left: 3.25rem;
+        }
+
+        .form-floating .form-control.has-left-icon + label {
+            padding-left: 2.75rem;
+        }
         
         .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            z-index: 10;
+        }
+
+        .password-input {
+            padding-right: 4.5rem;
+        }
+
+        .password-toggle {
             position: absolute;
             right: 15px;
             top: 50%;
             transform: translateY(-50%);
             color: var(--primary-color);
             font-size: 1.1rem;
-            z-index: 10;
+            z-index: 11;
+            background: transparent;
+            border: 0;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .password-toggle:focus {
+            outline: none;
         }
         
         .remember-section {
@@ -464,15 +494,18 @@
                                     @csrf
                                     
                                     <div class="form-floating">
-                                        <input class="form-control" maxlength="8" type="text" id="dni" placeholder="DNI" name="dni" value="{{ session('dni') ? session('dni') : '' }}" required>
+                                        <input class="form-control has-left-icon" maxlength="8" type="text" id="dni" placeholder="DNI" name="dni" value="{{ session('dni') ? session('dni') : '' }}" required>
                                         <label for="dni">DNI</label>
                                         <i class="fas fa-id-card input-icon"></i>
                                     </div>
                                     
                                     <div class="form-floating">
-                                        <input class="form-control" type="password" id="password" placeholder="Contraseña" name="password" required>
+                                        <input class="form-control password-input has-left-icon" type="password" id="password" placeholder="Contraseña" name="password" required>
                                         <label for="password">Contraseña</label>
                                         <i class="fas fa-lock input-icon"></i>
+                                        <button type="button" id="togglePassword" class="password-toggle" aria-label="Mostrar contraseña" aria-pressed="false">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
                                     </div>
                                     
                                     <div class="remember-section">
@@ -502,6 +535,27 @@
     <script>
         $('#dni').on('input', function() {
             this.value = this.value.replace(/\D/g, '');
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordInput = document.getElementById('password');
+            const toggleButton = document.getElementById('togglePassword');
+            if (!passwordInput || !toggleButton) return;
+
+            toggleButton.addEventListener('click', function() {
+                const show = passwordInput.type === 'password';
+                passwordInput.type = show ? 'text' : 'password';
+
+                this.setAttribute('aria-pressed', String(show));
+                this.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+
+                const icon = this.querySelector('i');
+                if (icon) {
+                    icon.classList.toggle('fa-eye', !show);
+                    icon.classList.toggle('fa-eye-slash', show);
+                }
+            });
         });
     </script>
     <script>

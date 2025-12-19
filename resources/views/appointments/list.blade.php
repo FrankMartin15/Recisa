@@ -3,6 +3,7 @@
     @push('css')
         <!--Alertas-->
         <script src="{{ asset('assets/js/sweetalert2@11.js') }}"></script>
+        <link rel="stylesheet" href="{{ asset('assets/css/bootstrap-select.min.css') }}">
         <!--CSS TABLA-->
         <link rel="stylesheet" href="{{ asset('assets/css/dataTables.bootstrap5.css') }}">      
     @endpush 
@@ -27,6 +28,90 @@
                 });
             </script>            
         @endif   
+
+        <div class="d-sm-flex align-items-center mb-4" style="justify-content: right;">
+            <a class="btn btn-primary btn-sm d-none d-sm-inline-block offline-hide" role="button" data-bs-toggle="modal"
+                data-bs-target="#appointmentReportModal"
+                style="--bs-primary: #00486E;--bs-primary-rgb: 0,72,110;--bs-body-bg: #00476D;background: #00476D !important;">
+                <i class="fas fa-download fa-sm text-white-50"></i>&nbsp;Generar Reporte
+            </a>
+        </div>
+
+        {{-- Modal --}}
+        <div class="modal fade" id="appointmentReportModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+            aria-labelledby="appointmentReportModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <form method="GET" action="{{ url('/recisa/appointments/reporte') }}" target="_blank">
+                        @csrf
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="appointmentReportModalLabel">Filtros para Reporte de Citas</h1>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-6 mt-2">
+                                    <div class="input-group">
+                                        <label class="input-group-text">Fecha Inicio</label>
+                                        <input type="date" class="form-control" name="start_date" required value="{{ date('Y-m-d') }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mt-2">
+                                    <div class="input-group">
+                                        <label class="input-group-text">Fecha Fin</label>
+                                        <input type="date" class="form-control" name="end_date" required value="{{ date('Y-m-d') }}">
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12 mt-2">
+                                    <div class="input-group">
+                                        <label class="input-group-text">Especialidad</label>
+                                        <select name="id_specialization" data-style="btn-secondary" data-live-search="true"
+                                            data-size="5" class="form-control selectpicker">
+                                            <option value="" selected>Todas</option>
+                                            @foreach(($filterSpecializations ?? collect()) as $spec)
+                                                <option value="{{ $spec->id }}">{{ $spec->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12 mt-2">
+                                    <div class="input-group">
+                                        <label class="input-group-text">Doctor</label>
+                                        <select name="id_doctor" data-style="btn-secondary" data-live-search="true"
+                                            data-size="5" class="form-control selectpicker">
+                                            <option value="" selected>Todos</option>
+                                            @foreach(($filterDoctors ?? collect()) as $doc)
+                                                <option value="{{ $doc->id }}">{{ ($doc->surnames ?? '') . ', ' . ($doc->names ?? '') }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12 mt-2">
+                                    <div class="input-group">
+                                        <label class="input-group-text">Paciente</label>
+                                        <select name="id_patient" data-style="btn-secondary" data-live-search="true"
+                                            data-size="5" class="form-control selectpicker">
+                                            <option value="" selected>Todos</option>
+                                            @foreach(($filterPatients ?? collect()) as $pat)
+                                                <option value="{{ $pat->id }}">{{ ($pat->surnames ?? '') . ', ' . ($pat->names ?? '') }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <small class="text-muted">Si seleccionas paciente, el reporte incluye todas sus especialidades en el rango.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-danger" style="background: #EB5C5E;">Realizar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
 
         <div class="row">
             <div class="col">
@@ -88,6 +173,7 @@
         </div>   
     @endsection
     @push('js')
+        <script src="{{ asset('assets/js/bootstrap-select.min.js') }}"></script>
         <script>
             $('#citas').DataTable({
                 responsive: true,
@@ -112,5 +198,8 @@
                     }
                 }
             });
+
+            // Inicializar selectpickers del modal de reporte
+            $('.selectpicker').selectpicker();
         </script>    
     @endpush

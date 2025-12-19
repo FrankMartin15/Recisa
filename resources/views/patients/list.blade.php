@@ -27,13 +27,15 @@
             });
         </script>
     @endif
-    <div class="d-sm-flex align-items-center mb-4" style="justify-content: right;">
-        <a class="btn btn-primary btn-sm d-none d-sm-inline-block" target="_blank" role="button"
-            href="{{ url('recisa/patients/reporte') }}"
-            style="--bs-primary: #00486E;--bs-primary-rgb: 0,72,110;--bs-body-bg: #00476D;background: #00476D !important;">
-            <i class="fas fa-download fa-sm text-white-50"></i>&nbsp;Generar Reporte
-        </a>
-    </div>
+    @if (Auth::user()->user_level != 3)
+        <div class="d-sm-flex align-items-center mb-4" style="justify-content: right;">
+            <a class="btn btn-primary btn-sm d-none d-sm-inline-block" target="_blank" role="button"
+                href="{{ url('recisa/patients/reporte') }}"
+                style="--bs-primary: #00486E;--bs-primary-rgb: 0,72,110;--bs-body-bg: #00476D;background: #00476D !important;">
+                <i class="fas fa-download fa-sm text-white-50"></i>&nbsp;Generar Reporte
+            </a>
+        </div>
+    @endif
     <div class="row">
         <div class="col">
             <div class="card shadow">
@@ -51,8 +53,10 @@
                                     <th style="width: 100px; font-weight:bold; text-align: left;">Celular</th>
                                     <th style="width: 300px; font-weight:bold; text-align: left;">Edad</th>
                                     <th style="width: 300px; font-weight:bold; text-align: left;">Creación</th>
-                                    <th style="width: 300px; text-align: center !important; font-weight:bold;">Opciones</th>
-                                    <th style="width: 300px; text-align: center !important; font-weight:bold;">Reporte</th>
+                                    @if (Auth::user()->user_level != 3)
+                                        <th style="width: 300px; text-align: center !important; font-weight:bold;">Opciones</th>
+                                        <th style="width: 300px; text-align: center !important; font-weight:bold;">Reporte</th>
+                                    @endif
                                 </tr>
                             </thead>
                             <tbody>
@@ -64,60 +68,62 @@
                                         <td style="text-align: left;">{{ $patient->phone }}</td>
                                         <td style="text-align: left;">{{ $patient->calculated_age }} años</td>
                                         <td>{{ date('d-m-Y', strtotime($patient->created_at)) }}</td>
-                                        <td class="text-center">
-                                            <div class="btn-group" role="group">
-                                                <a href="{{ url('recisa/patients/edit/' . $patient->slug) }}"
-                                                    class="btn btn-primary" style="background: #7BDE7C;"><i
-                                                        class="fas fa-pencil-alt"></i>
-                                                </a>
-                                                 <button type="button" class="btn btn-info manage-history-btn" 
-                data-bs-toggle="modal" 
-                data-bs-target="#historyModal"
-                data-patient-id="{{ $patient->id }}"
-                data-patient-name="{{ $patient->names }} {{ $patient->surnames }}"
-                data-history-number="{{ $patient->history_number ?? '' }}">
-            <i class="fas fa-folder-open"></i>
-        </button>
-                                                <button type="button" class="btn btn-danger" style="background: #EB5C5E;"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#staticBackdrop-{{ $patient->id }}">
-                                                    <i class="far fa-trash-alt"></i>
-                                                </button>
-                                                <!-- Modal -->
-                                                <div class="modal fade" id="staticBackdrop-{{ $patient->id }}"
-                                                    data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-                                                    aria-labelledby="staticBackdropLabel" aria-hidden="true">
-                                                    <div class="modal-dialog modal-dialog-centered">
-                                                        <div class="modal-content">
-                                                            <div class="modal-header">
-                                                                <h1 class="modal-title fs-5" id="staticBackdropLabel">Desea
-                                                                    Eliminar el Paciente</h1>
-                                                                <button type="button" class="btn-close"
-                                                                    data-bs-dismiss="modal" aria-label="Close"></button>
-                                                            </div>
-                                                            <div class="modal-body">
-                                                                El paciente {{ $patient->names }} debe ser informado
-                                                                después de haber realizado esta acción.
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-secondary"
-                                                                    data-bs-dismiss="modal">Cancelar</button>
-                                                                <a href="{{ url('recisa/patients/delete/' . $patient->id) }}"
-                                                                    class="btn btn-danger"style="background: #EB5C5E;">
-                                                                    Eliminar
-                                                                </a>
+                                        @if (Auth::user()->user_level != 3)
+                                            <td class="text-center">
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ url('recisa/patients/edit/' . $patient->slug) }}"
+                                                        class="btn btn-primary" style="background: #7BDE7C;"><i
+                                                            class="fas fa-pencil-alt"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-info manage-history-btn" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#historyModal"
+                                                        data-patient-id="{{ $patient->id }}"
+                                                        data-patient-name="{{ $patient->names }} {{ $patient->surnames }}"
+                                                        data-history-number="{{ $patient->history_number ?? '' }}">
+                                                        <i class="fas fa-folder-open"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-danger" style="background: #EB5C5E;"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#staticBackdrop-{{ $patient->id }}">
+                                                        <i class="far fa-trash-alt"></i>
+                                                    </button>
+                                                    <!-- Modal -->
+                                                    <div class="modal fade" id="staticBackdrop-{{ $patient->id }}"
+                                                        data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+                                                        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                                                        <div class="modal-dialog modal-dialog-centered">
+                                                            <div class="modal-content">
+                                                                <div class="modal-header">
+                                                                    <h1 class="modal-title fs-5" id="staticBackdropLabel">Desea
+                                                                        Eliminar el Paciente</h1>
+                                                                    <button type="button" class="btn-close"
+                                                                        data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    El paciente {{ $patient->names }} debe ser informado
+                                                                    después de haber realizado esta acción.
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-secondary"
+                                                                        data-bs-dismiss="modal">Cancelar</button>
+                                                                    <a href="{{ url('recisa/patients/delete/' . $patient->id) }}"
+                                                                        class="btn btn-danger"style="background: #EB5C5E;">
+                                                                        Eliminar
+                                                                    </a>
 
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td class="text-center">
-                                            <a href="{{ url('recisa/patients/reporte/' . $patient->dni) }}" target="_blank"
-                                                class="btn btn-primary" style="background: #58D68D !important;"><i
-                                                    class="fa-solid fa-file-pdf"></i></a>
-                                        </td>
+                                            </td>
+                                            <td class="text-center">
+                                                <a href="{{ url('recisa/patients/reporte/' . $patient->dni) }}" target="_blank"
+                                                    class="btn btn-primary" style="background: #58D68D !important;"><i
+                                                        class="fa-solid fa-file-pdf"></i></a>
+                                            </td>
+                                        @endif
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -149,7 +155,9 @@
                             <h6 class="text-muted fw-bold mb-3">Datos del Paciente</h6>
                             <div class="mb-3">
                                 <label for="modalHistoryNumber" class="form-label">Número de Historial Clínico</label>
-                                <input type="text" class="form-control" id="modalHistoryNumber" name="history_number" maxlength="10" placeholder="Ingrese el número de historial" required>
+                                <input type="text" class="form-control" id="modalHistoryNumber" name="history_number"
+                                    maxlength="6" minlength="6" inputmode="numeric" pattern="\d{6}" autocomplete="off"
+                                    placeholder="Ingrese el número de historial" required>
                             </div>
                             
                             <hr>

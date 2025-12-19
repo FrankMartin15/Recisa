@@ -56,7 +56,8 @@
                             </div>
                             <div class="col-md-3">
                                 <label for="phone" class="form-label">Número Historial:</label>
-                                <input readonly class="form-control" maxlength="10" minlength="10" type="text"
+                                <input readonly class="form-control" maxlength="6" minlength="6" type="text"
+                                    inputmode="numeric" pattern="\d{6}" autocomplete="off"
                                     name="history_number" id="history_number"
                                     value="{{ old('history_number', $patient->history_number) }}">
                             </div>

@@ -109,6 +109,21 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
                         @endif
+                        
+                        @if (session('no_cupos'))
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                Swal.fire({
+                                    icon: 'warning',
+                                    title: 'Sin Cupos Disponibles',
+                                    text: '{{ session('no_cupos') }}',
+                                    confirmButtonText: 'Entendido',
+                                    timer: 3000,
+                                    timerProgressBar: true
+                                });
+                            });
+                        </script>
+                        @endif
                     </div>
                     
                     <form id="appointment-form" method="POST" action="{{ url('recisa/appoitnment/add') }}">
@@ -119,15 +134,45 @@
                                     <label class="input-group-text" for="id_quota">
                                         <i class="fa-solid fa-user-doctor text-primary"></i>
                                     </label>
-                                    <select name="id_quota" id="id_quota" data-style="btn-secondary" data-live-search="true" data-size="3" class="form-control selectpicker" title="Seleccione el médico y especialidad" required>
+                                    <select name="id_quota" id="id_quota" data-style="btn-secondary" data-live-search="true" data-size="3" class="form-control selectpicker" title="Seleccione el médico y especialidad" required {{ $isDoctorUser ? 'disabled' : '' }}>
                                         @foreach ($quotas as $quota)
-                                        <optgroup label="{{ $quota->user->surnames }}, {{ $quota->user->names }} -> cupos: {{ $quota->cupo_doctor }}">
-                                            <option value="{{ $quota->id }}" data-doctor-id="{{ $quota->user->id }}" {{ old('id_quota') == $quota->id ? 'selected' : '' }} {{ $quota->cupo_doctor == 0 ? 'disabled' : '' }}>
-                                                {{ $quota->specialization->name }}
-                                            </option>
-                                        </optgroup>
+                                        @php
+                                            $citasHoy = $appointmentCounts[$quota->id] ?? 0;
+                                            $cuposRestantes = $quota->cupo_doctor - $citasHoy;
+                                        @endphp
+                                        @if($isDoctorUser)
+                                            {{-- Vista para doctores: información detallada --}}
+                                            <optgroup label="{{ $quota->user->surnames }}, {{ $quota->user->names }} -> Cupos: {{ $quota->cupo_doctor }} | Citas hoy: {{ $citasHoy }} | Disponibles: {{ $cuposRestantes }}">
+                                                <option value="{{ $quota->id }}" 
+                                                        data-doctor-id="{{ $quota->user->id }}" 
+                                                        data-cupos="{{ $quota->cupo_doctor }}"
+                                                        data-citas="{{ $citasHoy }}"
+                                                        data-specialization-id="{{ $quota->id_specialization }}"
+                                                        data-specialization-total="{{ $quota->specialization->quantity_voucher }}"
+                                                        {{ (old('id_quota') == $quota->id || ($isDoctorUser && $doctorQuotaId == $quota->id)) ? 'selected' : '' }} 
+                                                        {{ $cuposRestantes <= 0 ? 'disabled' : '' }}>
+                                                    {{ $quota->specialization->name }}
+                                                </option>
+                                            </optgroup>
+                                        @else
+                                            {{-- Vista para otros roles: información simple --}}
+                                            <optgroup label="{{ $quota->user->surnames }}, {{ $quota->user->names }} -> cupos: {{ $quota->cupo_doctor }}">
+                                                <option value="{{ $quota->id }}" 
+                                                        data-doctor-id="{{ $quota->user->id }}" 
+                                                        {{ old('id_quota') == $quota->id ? 'selected' : '' }} 
+                                                        {{ $quota->cupo_doctor == 0 ? 'disabled' : '' }}>
+                                                    {{ $quota->specialization->name }}
+                                                </option>
+                                            </optgroup>
+                                        @endif
                                         @endforeach
                                     </select>
+                                    @if($isDoctorUser)
+                                        <input type="hidden" name="id_quota" value="{{ $doctorQuotaId }}">
+                                        <button type="button" class="btn btn-outline-primary" id="btn-update-cupos" title="Actualizar Cupos">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                    @endif
                                 </div>
                                 <small id="cupos-offline-notice" class="text-warning" style="display: none;">
                                     <i class="fas fa-exclamation-triangle"></i> Modo offline: Los cupos y horas mostrados son aproximados
@@ -904,6 +949,96 @@ $(document).ready(function() {
     // Actualizar cuando cambie el estado de conexión
     window.addEventListener('online', loadPendingAppointments);
     window.addEventListener('offline', loadPendingAppointments);
+
+    // Botón para actualizar cupos (solo para doctores)
+    @if($isDoctorUser)
+    $('#btn-update-cupos').on('click', function() {
+        const selectedOption = $('#id_quota option:selected');
+        const cuposActuales = parseInt(selectedOption.data('cupos')) || 0;
+        const citasHoy = parseInt(selectedOption.data('citas')) || 0;
+        const specializationTotal = parseInt(selectedOption.data('specialization-total')) || 0;
+        const quotaId = selectedOption.val();
+        
+        Swal.fire({
+            title: 'Actualizar Cupos',
+            html: `
+                <div class="text-start">
+                    <p><strong>Información actual:</strong></p>
+                    <ul>
+                        <li>Cupos asignados: <strong>${cuposActuales}</strong></li>
+                        <li>Citas registradas hoy: <strong>${citasHoy}</strong></li>
+                        <li>Total de cupos de la especialidad: <strong>${specializationTotal}</strong></li>
+                    </ul>
+                    <div class="mb-3">
+                        <label for="nuevos-cupos" class="form-label">Nuevos cupos a asignar:</label>
+                        <input type="number" id="nuevos-cupos" class="form-control" 
+                               min="${citasHoy}" 
+                               max="${specializationTotal}" 
+                               value="${cuposActuales}"
+                               placeholder="Ingrese nuevos cupos">
+                        <small class="text-muted">Mínimo: ${citasHoy} (citas ya registradas) | Máximo: ${specializationTotal} (total de la especialidad)</small>
+                    </div>
+                </div>
+            `,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Actualizar',
+            cancelButtonText: 'Cancelar',
+            preConfirm: () => {
+                const nuevosCupos = parseInt(document.getElementById('nuevos-cupos').value);
+                
+                if (isNaN(nuevosCupos)) {
+                    Swal.showValidationMessage('Debe ingresar un número válido');
+                    return false;
+                }
+                
+                if (nuevosCupos < citasHoy) {
+                    Swal.showValidationMessage(`No puede asignar menos de ${citasHoy} cupos porque ya tiene ${citasHoy} citas registradas hoy`);
+                    return false;
+                }
+                
+                if (nuevosCupos > specializationTotal) {
+                    Swal.showValidationMessage(`No puede asignar más de ${specializationTotal} cupos (total de la especialidad)`);
+                    return false;
+                }
+                
+                return nuevosCupos;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Enviar actualización al servidor
+                $.ajax({
+                    url: '{{ url("recisa/quota/update") }}',
+                    method: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        quota_id: quotaId,
+                        nuevo_cupo: result.value
+                    },
+                    success: function(response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Cupos actualizados',
+                            text: `Se han actualizado los cupos a ${result.value}`,
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function(xhr) {
+                        const errorMsg = xhr.responseJSON?.message || 'Error al actualizar los cupos';
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: errorMsg
+                        });
+                    }
+                });
+            }
+        });
+    });
+    @endif
 
 });
 </script>

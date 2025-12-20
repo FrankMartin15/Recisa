@@ -138,6 +138,9 @@ Route::group(['middleware' => 'admin_or_secretary_or_doctor'], function () {
     Route::post('/recisa/appointments/add', [AppointmentController::class, 'insert']);
     Route::post('/recisa/appointments/insert', [AppointmentController::class, 'insert']); // API para IndexedDB
     Route::get('/recisa/appoitnment/show/{appointment}', [AppointmentController::class, 'show']);
+    
+    // Actualizar cupos del doctor
+    Route::post('/recisa/quota/update', [AppointmentController::class, 'updateQuota']);
 
     // Reporte de citas (PDF)
     Route::get('/recisa/appointments/reporte', [AppointmentController::class, 'reporte']);

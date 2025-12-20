@@ -172,7 +172,27 @@ class AppointmentController extends Controller
         }
 
         $doctors = $doctorsQuery->get();
-        return view('appointments.created',compact('quotas','patients','today','doctors','hour'));
+        
+        // Detectar si el usuario es doctor y obtener su asignación
+        $isDoctorUser = false;
+        $doctorQuotaId = null;
+        if ($authUser && (int) $authUser->user_level === 3) {
+            $isDoctorUser = true;
+            $doctorQuota = UserSpecialization::where('id_user', $authUser->id)->first();
+            if ($doctorQuota) {
+                $doctorQuotaId = $doctorQuota->id;
+            }
+        }
+        
+        // Contar citas por especialidad para cada quota (solo hoy)
+        $appointmentCounts = [];
+        foreach ($quotas as $quota) {
+            $appointmentCounts[$quota->id] = Appointment::where('id_quota', $quota->id)
+                ->where('date', $today)
+                ->count();
+        }
+        
+        return view('appointments.created',compact('quotas','patients','today','doctors','hour','isDoctorUser','doctorQuotaId','appointmentCounts'));
     }
 
     public function insert(Request $request){
@@ -217,6 +237,21 @@ class AppointmentController extends Controller
                         'was_duplicate' => true
                     ]);
                 }
+                
+                // Validar cupos disponibles
+                $userSpecialization = UserSpecialization::findOrFail($request->id_quota);
+                $citasHoy = Appointment::where('id_quota', $request->id_quota)
+                    ->where('date', $request->date)
+                    ->count();
+                $cuposDisponibles = $userSpecialization->cupo_doctor - $citasHoy;
+                
+                if ($cuposDisponibles <= 0) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No hay cupos disponibles para esta especialidad en esta fecha.'
+                    ], 422);
+                }
 
                 $appointment = new Appointment();
                 $appointment->fill([
@@ -229,12 +264,8 @@ class AppointmentController extends Controller
                 ]);
                 $appointment->save();
 
-                // Actualizar cupos
-                $userSpecialization = UserSpecialization::findOrFail($request->id_quota);
-                if ($userSpecialization->cupo_doctor > 0) {
-                    $userSpecialization->cupo_doctor -= 1;
-                    $userSpecialization->save();
-                }
+                // No decrementamos cupos aquí porque no reflejan disponibilidad real
+                // Los cupos se calculan dinámicamente: cupo_doctor - citas_del_dia
 
                 DB::commit();
 
@@ -288,6 +319,30 @@ class AppointmentController extends Controller
         try {
             DB::beginTransaction();
             
+            // Validar cupos disponibles antes de crear la cita
+            $userSpecialization = UserSpecialization::findOrFail($request->id_quota);
+            $citasHoy = Appointment::where('id_quota', $request->id_quota)
+                ->where('date', $request->date)
+                ->count();
+            $cuposDisponibles = $userSpecialization->cupo_doctor - $citasHoy;
+            
+            if ($cuposDisponibles <= 0) {
+                DB::rollBack();
+                
+                // Si es AJAX, devolver error JSON
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No hay cupos disponibles para esta especialidad en esta fecha.'
+                    ], 422);
+                }
+                
+                // Si es formulario normal, redirect con sesión
+                return redirect()->back()
+                    ->with('no_cupos', 'No hay cupos disponibles para esta especialidad en esta fecha.')
+                    ->withInput();
+            }
+            
             $appointment=new Appointment();
             $appointment->fill([
                  'id_quota'=>$request->id_quota,
@@ -299,12 +354,8 @@ class AppointmentController extends Controller
             ]);
             $appointment->save();
 
-            // Actualizar cantidad de cupos en la tabla user_specialization
-            $userSpecialization = UserSpecialization::findOrFail($request->id_quota);
-            if ($userSpecialization->cupo_doctor > 0) { // Solo decrementa si hay cupos
-                $userSpecialization->cupo_doctor -= 1;
-                $userSpecialization->save();
-            }
+            // No decrementamos cupos aquí porque no reflejan disponibilidad real
+            // Los cupos se calculan dinámicamente: cupo_doctor - citas_del_dia
 
             DB::commit();
 
@@ -337,6 +388,62 @@ class AppointmentController extends Controller
                 ], 500); // Error genérico del servidor
             }
             return redirect()->back()->with('error','Error al registrar la cita: ' . $e->getMessage())->withInput();
+        }
+    }
+    
+    public function updateQuota(Request $request){
+        try {
+            $request->validate([
+                'quota_id' => 'required|exists:user_specialization,id',
+                'nuevo_cupo' => 'required|integer|min:0'
+            ]);
+            
+            $quotaId = $request->quota_id;
+            $nuevoCupo = $request->nuevo_cupo;
+            
+            // Obtener la asignación
+            $userSpecialization = UserSpecialization::with('specialization')->findOrFail($quotaId);
+            
+            // Verificar que el usuario autenticado sea el dueño de esta asignación
+            $authUser = Auth::user();
+            if (!$authUser || (int) $authUser->user_level !== 3 || (int) $authUser->id !== (int) $userSpecialization->id_user) {
+                return response()->json(['message' => 'No tienes permisos para actualizar estos cupos'], 403);
+            }
+            
+            // Contar citas del día
+            $today = date('Y-m-d');
+            $citasHoy = Appointment::where('id_quota', $quotaId)
+                ->where('date', $today)
+                ->count();
+            
+            // Validar que el nuevo cupo no sea menor que las citas ya registradas
+            if ($nuevoCupo < $citasHoy) {
+                return response()->json([
+                    'message' => "No puede asignar menos de {$citasHoy} cupos porque ya tiene {$citasHoy} citas registradas hoy"
+                ], 422);
+            }
+            
+            // Validar que no exceda el total de la especialidad
+            $specializationTotal = $userSpecialization->specialization->quantity_voucher;
+            if ($nuevoCupo > $specializationTotal) {
+                return response()->json([
+                    'message' => "No puede asignar más de {$specializationTotal} cupos (total de la especialidad)"
+                ], 422);
+            }
+            
+            // Actualizar el cupo
+            $userSpecialization->cupo_doctor = $nuevoCupo;
+            $userSpecialization->save();
+            
+            return response()->json([
+                'message' => 'Cupos actualizados correctamente',
+                'nuevo_cupo' => $nuevoCupo,
+                'citas_hoy' => $citasHoy,
+                'disponibles' => $nuevoCupo - $citasHoy
+            ], 200);
+            
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error al actualizar los cupos: ' . $e->getMessage()], 500);
         }
     }
 

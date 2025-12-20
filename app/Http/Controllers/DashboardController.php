@@ -18,18 +18,21 @@ class DashboardController extends Controller
        
        if ($user->user_level == 1) {
            $doctor = User::where('user_level', 3)->count();
-           //Conteo de citas en espera
-           $quatity = DB::table('specializations')
-               ->select('quantity_voucher')
-               ->unionAll(DB::table('user_specialization')->select('cupo_doctor'))
-               ->get()
-               ->sum('quantity_voucher');
-           //Validadcion para quatity null
+           
+           // Conteo de cupos disponibles total (suma de cupos de doctores)
+           $quatity = UserSpecialization::sum('cupo_doctor');
+           
+           // Validación para quatity null
            if (is_null($quatity)) {
                $quatity = 0;
            }
+           
+           // Total de citas programadas
            $appointment = Appointment::count();
+           
+           // Capacidad máxima = cupos disponibles + citas ya programadas
            $maxquatity = $quatity + $appointment;
+           
            $patient = Patient::count();
 
            // Para Estado de Doctores
@@ -75,20 +78,33 @@ class DashboardController extends Controller
                    }
                ])
                ->get();
-           // Saber el avance de la atención de citas
+           // Saber el avance de la atención de citas DEL DÍA DE HOY
            $atendidos = UserSpecialization::where('id_user', $user->id)
                ->with(['specialization'])
                ->withCount([
-                   'appointment as appointment_pending_count' => function ($query) {
-                       $query->where('status', 1);
+                   'appointment as appointment_attended_count' => function ($query) {
+                       $query->where('status', 1)
+                             ->where('date', date('Y-m-d'));
                    },
-                   'appointment as appointment_cancel_count' => function ($query) {
-                       $query->where('status', 2);
+                   'appointment as appointment_noshow_count' => function ($query) {
+                       $query->where('status', 2)
+                             ->where('date', date('Y-m-d'));
                    },
-                   'appointment as appointment_count'
+                   'appointment as appointment_today_count' => function ($query) {
+                       $query->where('date', date('Y-m-d'));
+                   }
                ])
                ->get();
-           return view('doctor.dashboard', compact('assignments', 'atendidos'));
+           
+           // Traer TODAS las citas del doctor para hoy (no solo pendientes)
+           $appointments = Appointment::whereHas('doctor', function ($query) use ($user) {
+                               $query->where('id_user', $user->id);
+                           })
+                           ->where('date', date('Y-m-d'))
+                           ->orderBy('time', 'asc')
+                           ->get();
+           
+           return view('doctor.dashboard', compact('assignments', 'atendidos', 'appointments'));
        }
    }
 }

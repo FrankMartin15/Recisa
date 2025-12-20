@@ -111,7 +111,7 @@
                         @endif
                     </div>
                     
-                    <form id="appointment-form" method="POST" action="{{ url('recisa/appointments/add') }}">
+                    <form id="appointment-form" method="POST" action="{{ url('recisa/appoitnment/add') }}">
                         @csrf
                         <div class="row">
                             <div class="col-md-12 mt-2">
@@ -640,7 +640,7 @@ $(document).ready(function() {
         });
     });
 
-    // ⭐ MANEJO OPTIMIZADO DEL FORMULARIO
+    // ⭐ MANEJO DEL FORMULARIO (VERSIÓN CORREGIDA)
     $('#appointment-form').on('submit', function(event) {
         event.preventDefault();
 
@@ -650,84 +650,148 @@ $(document).ready(function() {
         const submitBtn = $('#submit-btn');
         const btnText = $('#btn-text');
         const btnSpinner = $('#btn-spinner');
+        const form = $(this);
         
         // Deshabilitar botón
         submitBtn.prop('disabled', true);
         btnText.addClass('d-none');
         btnSpinner.removeClass('d-none');
-
-        if (window.recisaOffline && typeof window.recisaOffline.processForm === 'function') {
-            // Obtener datos ANTES de procesar (para marcar hora como reservada)
-            const selectedQuotaOption = $('#id_quota option:selected');
-            const doctorId = selectedQuotaOption.data('doctor-id');
-            const patientName = $('#id_patient option:selected').text().trim();
-            const appointmentTime = $('#time').val();
-            const appointmentDate = $('#date').val();
-            const isOffline = !navigator.onLine;
-
-            // Procesar formulario
-            window.recisaOffline.processForm(event);
-
-            // Si guardó offline, marcar hora como reservada para evitar duplicados
-            if (isOffline && appointmentTime) {
-                // Agregar la hora al array de horas reservadas
-                if (!reservedHours.includes(appointmentTime)) {
-                    reservedHours.push(appointmentTime);
-                    console.log('⏰ Hora marcada como reservada (offline):', appointmentTime);
+        
+        // Verificar si estamos online
+        const isOnline = navigator.onLine;
+        
+        if (isOnline) {
+            // ========== MODO ONLINE: Enviar al servidor con AJAX ==========
+            console.log('📡 Modo ONLINE: Enviando al servidor');
+            
+            $.ajax({
+                url: form.attr('action'),
+                method: 'POST',
+                data: form.serialize(),
+                success: function(response) {
+                    console.log('✅ Respuesta del servidor:', response);
+                    
+                    // Limpiar formulario
+                    form[0].reset();
+                    $('#date').val(new Date().toISOString().split('T')[0]);
+                    restaurarSelectPickersCompleto();
+                    regenerarHorasDisponibles();
+                    
+                    // Restaurar botón
+                    submitBtn.prop('disabled', false);
+                    btnText.removeClass('d-none');
+                    btnSpinner.addClass('d-none');
+                    
+                    // Mostrar mensaje de éxito
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Cita Registrada',
+                        text: 'La cita ha sido registrada exitosamente.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        // Recargar la página para actualizar la lista de citas
+                        location.reload();
+                    });
+                },
+                error: function(xhr) {
+                    console.error('❌ Error del servidor:', xhr);
+                    
+                    // Restaurar botón
+                    submitBtn.prop('disabled', false);
+                    btnText.removeClass('d-none');
+                    btnSpinner.addClass('d-none');
+                    
+                    let errorMessage = 'Error al registrar la cita.';
+                    
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        const errors = Object.values(xhr.responseJSON.errors).flat();
+                        errorMessage = errors.join('<br>');
+                    }
+                    
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        html: errorMessage
+                    });
                 }
-            }
-
-            // Restauración después del envío
-            setTimeout(() => {
-                $('#appointment-form')[0].reset();
-                $('#date').val(nextWeekdayFrom(null));
-                restaurarSelectPickersCompleto();
-
-                // Regenerar horas disponibles (ahora sin la hora recién reservada)
-                regenerarHorasDisponibles();
-
-                // Actualizar el modal con la nueva cita
-                if (doctorId && patientName && appointmentTime) {
-                    actualizarModalDeCitas(doctorId, patientName, appointmentTime);
-                }
-
-                // Verificación adicional para evitar opciones en blanco
+            });
+            
+        } else {
+            // ========== MODO OFFLINE: Usar sistema offline ==========
+            console.log('📴 Modo OFFLINE: Guardando localmente');
+            
+            if (window.recisaOffline && typeof window.recisaOffline.processForm === 'function') {
+                // Obtener datos antes de procesar
+                const selectedQuotaOption = $('#id_quota option:selected');
+                const doctorId = selectedQuotaOption.data('doctor-id');
+                const patientName = $('#id_patient option:selected').text().trim();
+                const appointmentTime = $('#time').val();
+                
+                // Procesar formulario offline
+                window.recisaOffline.processForm(event);
+                
+                // Restauración después del envío
                 setTimeout(() => {
-                    verificarDuplicados();
+                    form[0].reset();
+                    $('#date').val(new Date().toISOString().split('T')[0]);
+                    restaurarSelectPickersCompleto();
+                    regenerarHorasDisponibles();
+                    
+                    // Actualizar modal si es necesario
+                    if (doctorId && patientName && appointmentTime) {
+                        actualizarModalDeCitas(doctorId, patientName, appointmentTime);
+                    }
+                    
+                    // Restaurar botón
+                    submitBtn.prop('disabled', false);
+                    btnText.removeClass('d-none');
+                    btnSpinner.addClass('d-none');
+                    
+                    // Mostrar mensaje de éxito offline
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Cita Guardada Localmente',
+                        text: 'La cita se enviará al servidor cuando recupere la conexión.',
+                        timer: 3000,
+                        showConfirmButton: false
+                    });
                 }, 500);
-
-                // Mostrar mensaje de éxito (diferente si es offline)
-                const message = isOffline
-                    ? 'Cita guardada localmente. Se enviará cuando vuelva la conexión.'
-                    : 'La cita ha sido registrada exitosamente y se mandó un mensaje al paciente.';
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Cita Registrada',
-                    text: message,
-                    timer: isOffline ? 3000 : 2000,
-                    showConfirmButton: false
-                });
-
-                // Restaurar botón
+                
+            } else {
+                // Si no hay sistema offline disponible
                 submitBtn.prop('disabled', false);
                 btnText.removeClass('d-none');
                 btnSpinner.addClass('d-none');
-            }, 1000);
-
-        } else {
-            submitBtn.prop('disabled', false);
-            btnText.removeClass('d-none');
-            btnSpinner.addClass('d-none');
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Sistema offline no disponible. Recarga la página.'
-            });
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Sistema offline no disponible. Necesita conexión a internet.'
+                });
+            }
         }
     });
 
-    // ⭐ VERIFICACIÓN SIMPLE DE DUPLICADOS CADA 15 SEGUNDOS
+    // ⭐ VARIABLES PARA CONTROLAR INTERACCIÓN DEL USUARIO
+    let userIsInteracting = false;
+    let lastInteractionTime = Date.now();
+
+    // Detectar cuando el usuario está seleccionando opciones
+    $('#id_quota, #id_patient, #time').on('focus mousedown', function() {
+        userIsInteracting = true;
+        lastInteractionTime = Date.now();
+    });
+
+    $('#id_quota, #id_patient, #time').on('blur change', function() {
+        setTimeout(() => {
+            userIsInteracting = false;
+        }, 2000); // Esperar 2 segundos después de la última interacción
+    });
+
+    // ⭐ VERIFICACIÓN INTELIGENTE DE DUPLICADOS (NO INTERFIERE CON INTERACCIÓN)
     setInterval(function() {
         // Evitar resetear mientras el usuario interactúa con los selects
         if ($('.bootstrap-select.show').length > 0) {

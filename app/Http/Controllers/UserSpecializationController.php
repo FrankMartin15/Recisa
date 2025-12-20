@@ -27,19 +27,56 @@ class UserSpecializationController extends Controller
         $doctorId = $request->input('id_doctor');
         $specializationId = $request->input('id_specialization');
         $voucher = $request->input('vaucher_specialization');
-        $maxVoucher = $request->input('max_voucher');
-        $duplicate = UserSpecialization::where('id_user', '=', $doctorId)->where('id_specialization', '=', $specializationId)->exists();
+        
         try {
             DB::beginTransaction();
 
+            // Obtener la especialización
+            $specialization = Specialization::findOrFail($specializationId);
+            
+            // Obtener la suma total de cupos ya asignados para esta especialización
+            $cuposAsignadosTotales = UserSpecialization::where('id_specialization', $specializationId)
+                ->sum('cupo_doctor');
+            
             // Verificar si ya existe una asignación entre usuario y especialización
-            $duplicate = UserSpecialization::where('id_user', $doctorId)
+            $existingAssignment = UserSpecialization::where('id_user', $doctorId)
                 ->where('id_specialization', $specializationId)
                 ->first();
 
-            if ($duplicate) {
-                DB::rollBack();  // No se necesita commit si no se realiza ninguna acción
-                return redirect('admin/assignment')->with('error', 'El usuario ya tiene esta especialización asignada.');
+            if ($existingAssignment) {
+                // CASO 1: Ya existe la asignación - ACTUALIZAR cupo
+                
+                // Calcular cupos sin contar el cupo actual del doctor
+                $cuposSinEsteDoctor = $cuposAsignadosTotales - $existingAssignment->cupo_doctor;
+                
+                // Verificar si el nuevo cupo excede el límite
+                if (($cuposSinEsteDoctor + $voucher) > $specialization->quantity_voucher) {
+                    $cuposDisponibles = $specialization->quantity_voucher - $cuposSinEsteDoctor;
+                    DB::rollBack();
+                    return redirect('admin/assignment')->with('error', 'No se puede asignar ' . $voucher . ' cupos. Máximo disponible para asignar: ' . $cuposDisponibles . ' cupos. (Total especialidad: ' . $specialization->quantity_voucher . ', Ya asignados a otros: ' . $cuposSinEsteDoctor . ')');
+                }
+                
+                // Actualizar el cupo del doctor
+                $existingAssignment->cupo_doctor = $voucher;
+                $existingAssignment->save();
+                
+                DB::commit();
+                return redirect('admin/assignment')->with('success', 'Asignación actualizada con éxito. Nuevo cupo: ' . $voucher);
+            }
+
+            // CASO 2: Nueva asignación
+            
+            // Verificar si la suma de cupos excede el total de la especialidad
+            if (($cuposAsignadosTotales + $voucher) > $specialization->quantity_voucher) {
+                $cuposDisponibles = $specialization->quantity_voucher - $cuposAsignadosTotales;
+                
+                if ($cuposDisponibles <= 0) {
+                    DB::rollBack();
+                    return redirect('admin/assignment')->with('error', 'Los cupos de esta especialidad están completos. Total: ' . $specialization->quantity_voucher . ', Ya asignados: ' . $cuposAsignadosTotales);
+                }
+                
+                DB::rollBack();
+                return redirect('admin/assignment')->with('error', 'No se puede asignar ' . $voucher . ' cupos. Máximo disponible para asignar: ' . $cuposDisponibles . ' cupos. (Total especialidad: ' . $specialization->quantity_voucher . ', Ya asignados: ' . $cuposAsignadosTotales . ')');
             }
 
             // Crear nueva asignación
@@ -47,36 +84,26 @@ class UserSpecializationController extends Controller
             $userSpecialization->id_user = $doctorId;
             $userSpecialization->id_specialization = $specializationId;
             $userSpecialization->cupo_doctor = $voucher;
-
-            // Guardar la nueva asignación
             $userSpecialization->save();
 
-            // Actualizar cantidad de cupos en la especialización
-            $specialization = Specialization::findOrFail($specializationId);
-            $specialization->quantity_voucher -= $voucher;
-            $specialization->save();
-
-            DB::commit();  // Hacer commit solo después de que todo se haya completado con éxito
-
-            return redirect('admin/assignment')->with('success', 'Asignación registrada con éxito.');
+            DB::commit();
+            return redirect('admin/assignment')->with('success', 'Asignación registrada con éxito. Cupos asignados: ' . $voucher . '. Cupos restantes de la especialidad: ' . ($specialization->quantity_voucher - $cuposAsignadosTotales - $voucher));
+            
         } catch (Exception $e) {
-            DB::rollBack();  // Asegúrate de hacer rollback en caso de error
-            return redirect('admin/assignment')->with('error', 'Error al registrar la asignación.');
+            DB::rollBack();
+            return redirect('admin/assignment')->with('error', 'Error al registrar la asignación: ' . $e->getMessage());
         }
     }
 
 
     public function delete($id)
     {
-        // Buscar el usuario por su ID
+        // Buscar la asignación por su ID
         $userSpecialization = UserSpecialization::find($id);
 
-        $specialization = Specialization::find($userSpecialization->id_specialization);
-        $specialization->quantity_voucher += $userSpecialization->cupo_doctor;
-
-        // Eliminar la relación con la especialización específica
+        // Eliminar la asignación (no tocar quantity_voucher de la especialización)
         $userSpecialization->delete();
-        $specialization->save();
+        
         return redirect('admin/assignment')->with('success', 'La asignación fue eliminada');
     }
 }

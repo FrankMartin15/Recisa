@@ -3,6 +3,8 @@
 
 @push('css')
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css">
+<link rel="stylesheet" href="{{ asset('assets/css/dataTables.bootstrap5.css') }}">
+<script src="{{ asset('assets/js/sweetalert2@11.js') }}"></script>
 <style>
     /* DOCTOR DASHBOARD SPECIFIC STYLES */
     .dashboard-card {
@@ -264,12 +266,17 @@
 
         @foreach ($atendidos as $atendido)
             @php
-                $denominator = $atendido->cupo_doctor + $atendido->appointment_count;
-                if ($denominator > 0) {
-                    $maxquatity = (($atendido->appointment_pending_count + $atendido->appointment_cancel_count) / $denominator) * 100;
+                // Cálculo basado en las citas del día de hoy
+                $totalCitasHoy = $atendido->appointment_today_count;
+                $citasAtendidas = $atendido->appointment_attended_count;
+                $citasNoAsistio = $atendido->appointment_noshow_count;
+                $citasCompletadas = $citasAtendidas + $citasNoAsistio;
+                
+                if ($totalCitasHoy > 0) {
+                    $maxquatity = ($citasCompletadas / $totalCitasHoy) * 100;
                     $maxquatity = max(0, min(100, $maxquatity)); // Asegurar que esté entre 0-100
                 } else {
-                    $maxquatity = 0; // O el valor que consideres adecuado
+                    $maxquatity = 0; // Sin citas hoy = 0%
                 }
             @endphp
             <!-- Card de Atendidos con Progreso -->
@@ -282,9 +289,9 @@
                                     {{$atendido->specialization->name}}
                                 </div>
                                 <p class="stat-label text-white-50 text-uppercase mb-2">
-                                    Pacientes Atendidos
+                                    Pacientes Con Citas Hoy
                                 </p>
-                                <h3 class="stat-number text-white">{{$atendido->appointment_pending_count}}</h3>
+                                <h3 class="stat-number text-white">{{$citasCompletadas}}/{{$totalCitasHoy}}</h3>
                                 
                                 <div class="mt-3">
                                     <div class="d-flex justify-content-between align-items-center mb-1">
@@ -315,11 +322,234 @@
             </div>
         @endforeach
     </div>
+
+    <!-- Tabla de Citas con Filtros -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <p class="text-primary m-0 fw-bold">Mis Citas</p>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="form-label small mb-1">Fecha Inicio</label>
+                                    <input type="date" id="fecha_inicio" class="form-control form-control-sm" value="{{ date('Y-m-d') }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small mb-1">Fecha Fin</label>
+                                    <input type="date" id="fecha_fin" class="form-control form-control-sm" value="{{ date('Y-m-d') }}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small mb-1">&nbsp;</label>
+                                    <button type="button" id="btn_filtrar" class="btn btn-primary btn-sm w-100" style="background-color: #00476D !important;">
+                                        <i class="fas fa-search"></i> Filtrar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive table" role="grid">
+                        <table id="especialidades" class="table my-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 20px; font-weight:bold; text-align:center">#</th>
+                                    <th style="width: 350px; font-weight:bold; text-align:center">Paciente</th>
+                                    <th style="width: 150px; font-weight:bold; text-align:center">Especialidad</th>
+                                    <th style="width: 100px; font-weight:bold; text-align:center">Fecha</th>
+                                    <th style="width: 80px; font-weight:bold; text-align:center">Hora</th>
+                                    <th style="width: 100px; font-weight:bold; text-align:center">Estado</th>
+                                    <th style="font-weight:bold; text-align:center" class="text-center">Opciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla_citas_body">
+                                @foreach ($appointments as $value => $appointment)
+                                    <tr>
+                                        <td style="text-align: left">{{ $value + 1 }}</td>
+                                        <td style="text-align: left">{{ $appointment->patient->names }} {{ $appointment->patient->surnames }}</td>
+                                        <td style="text-align: left">{{ $appointment->doctor->specialization->name }}</td>
+                                        <td style="text-align: left">{{ $appointment->date }}</td>
+                                        <td style="text-align: left">{{ $appointment->time }}</td>
+                                        <td style="text-align: center">
+                                            @if($appointment->status == 0)
+                                                <span class="badge bg-warning text-dark">Pendiente</span>
+                                            @elseif($appointment->status == 1)
+                                                <span class="badge bg-success">Atendido</span>
+                                            @elseif($appointment->status == 2)
+                                                <span class="badge bg-danger">No Asistió</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url('doctor/attend/edit/'.$appointment->id) }}" class="btn btn-primary btn-sm" style="background: #F4D03F !important;">
+                                                    <i class="fa-solid fa-eye"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
 @push('js')
 <script>
+// Inicializar DataTables
+let table = $('#especialidades').DataTable({
+    responsive: true,
+    autoWidth:false,
+    "language": {
+        "lengthMenu": "Mostrar "+
+                        `<select class="custom-select custom-select-sm w-50 form-select form-select-sm mb-2">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="15">15</option>
+                            <option value="20">20</option>
+                        </select>`,
+        "zeroRecords": "No se encontraron citas en el rango seleccionado",
+        "info": "Mostrando la página _PAGE_ de _PAGES_ de _TOTAL_ citas",
+        "infoEmpty": "No hay registros disponibles",
+        "infoFiltered": "(filtrado de _MAX_ registros totales)",
+        "search": "Buscar:",
+        "emptyTable": "No hay citas disponibles",
+        "paginate":{
+            "next":">",
+            "previous":"<"
+        }
+    }
+});
+
+// Función para filtrar citas por rango de fechas
+$('#btn_filtrar').on('click', function() {
+    const fechaInicio = $('#fecha_inicio').val();
+    const fechaFin = $('#fecha_fin').val();
+    
+    if (!fechaInicio || !fechaFin) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Advertencia',
+            text: 'Por favor seleccione ambas fechas'
+        });
+        return;
+    }
+    
+    if (fechaInicio > fechaFin) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'La fecha de inicio no puede ser mayor a la fecha fin'
+        });
+        return;
+    }
+    
+    // Mostrar loading
+    Swal.fire({
+        title: 'Cargando...',
+        text: 'Filtrando citas',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    // Hacer petición AJAX
+    $.ajax({
+        url: '{{ url("/doctor/citas/filtrar") }}',
+        method: 'GET',
+        data: {
+            fecha_inicio: fechaInicio,
+            fecha_fin: fechaFin
+        },
+        success: function(response) {
+            Swal.close();
+            
+            if (response.success) {
+                // Destruir la tabla actual
+                table.destroy();
+                
+                // Actualizar el tbody
+                let tbody = '';
+                if (response.appointments.length > 0) {
+                    response.appointments.forEach((appointment, index) => {
+                        let statusBadge = '';
+                        if (appointment.status == 0) {
+                            statusBadge = '<span class="badge bg-warning text-dark">Pendiente</span>';
+                        } else if (appointment.status == 1) {
+                            statusBadge = '<span class="badge bg-success">Atendido</span>';
+                        } else if (appointment.status == 2) {
+                            statusBadge = '<span class="badge bg-danger">No Asistió</span>';
+                        }
+                        
+                        tbody += `
+                            <tr>
+                                <td style="text-align: left">${index + 1}</td>
+                                <td style="text-align: left">${appointment.patient.names} ${appointment.patient.surnames}</td>
+                                <td style="text-align: left">${appointment.doctor.specialization.name}</td>
+                                <td style="text-align: left">${appointment.date}</td>
+                                <td style="text-align: left">${appointment.time}</td>
+                                <td style="text-align: center">${statusBadge}</td>
+                                <td class="text-center">
+                                    <div class="btn-group" role="group">
+                                        <a href="/doctor/attend/edit/${appointment.id}" class="btn btn-primary btn-sm" style="background: #F4D03F !important;">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    tbody = '<tr><td colspan="7" class="text-center">No hay citas en el rango seleccionado</td></tr>';
+                }
+                
+                $('#tabla_citas_body').html(tbody);
+                
+                // Re-inicializar DataTables
+                table = $('#especialidades').DataTable({
+                    responsive: true,
+                    autoWidth:false,
+                    "language": {
+                        "lengthMenu": "Mostrar "+
+                                        `<select class="custom-select custom-select-sm w-50 form-select form-select-sm mb-2">
+                                            <option value="5">5</option>
+                                            <option value="10">10</option>
+                                            <option value="15">15</option>
+                                            <option value="20">20</option>
+                                        </select>`,
+                        "zeroRecords": "No se encontraron citas",
+                        "info": "Mostrando la página _PAGE_ de _PAGES_ de _TOTAL_ citas",
+                        "infoEmpty": "No hay registros disponibles",
+                        "infoFiltered": "(filtrado de _MAX_ registros totales)",
+                        "search": "Buscar:",
+                        "emptyTable": "No hay citas disponibles",
+                        "paginate":{
+                            "next":">",
+                            "previous":"<"
+                        }
+                    }
+                });
+            }
+        },
+        error: function(xhr) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error al cargar las citas'
+            });
+        }
+    });
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     // Animación para las barras de progreso
     const progressBars = document.querySelectorAll('.progress-bar');
@@ -334,7 +564,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Efecto de conteo para los números
     const numbers = document.querySelectorAll('.stat-number');
     numbers.forEach(number => {
-        const target = parseInt(number.textContent);
+        const text = number.textContent.trim();
+        
+        // Si contiene "/" (formato X/Y), no animar
+        if (text.includes('/')) {
+            return;
+        }
+        
+        const target = parseInt(text);
         if (!isNaN(target) && target > 0) {
             let current = 0;
             const increment = target / 30;

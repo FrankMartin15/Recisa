@@ -17,7 +17,7 @@
                     @endif
 
                     {{-- La acción del formulario debe apuntar a la ruta de actualización --}}
-                    <form action="{{ route('admin.rol.update', $usergroup) }}" method="post">
+                    <form action="{{ url('admin/rol/edit/' . $usergroup->slug) }}" method="post">
                         @csrf
                         <div class="row g-3 justify-content-center">
 

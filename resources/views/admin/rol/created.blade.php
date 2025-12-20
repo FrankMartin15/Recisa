@@ -23,7 +23,7 @@
                         </div>
                     @endif
 
-                    <form action="{{ url('admin/rol/store') }}" method="post">
+                    <form action="{{ url('admin/rol/add') }}" method="post">
                         @csrf
                         <div class="row g-3 justify-content-center">
 

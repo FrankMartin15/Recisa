@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Appointment;
 use App\Models\ClinicalHistories;
 use App\Models\UserSpecialization;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -86,11 +87,14 @@ class DoctorController extends Controller
     }
     public function edit(Appointment $appointment){
         $clinical_histories = ClinicalHistories::where('id_patient', $appointment->patient->id)->get();
-        return view('doctor.citas.show', compact('appointment','clinical_histories'));
+        $birthDate = Carbon::parse($appointment->patient->age);
+        $currentDate = Carbon::now();
+        $age = $currentDate->diffInYears($birthDate);
+        return view('doctor.citas.show', compact('appointment','clinical_histories', 'age'));
     }
     public function update(Request $request,$id){
         $validator = Validator::make($request->all(), [
-            'status' => 'required|in:1,2',
+            'status' => 'required|in:0,1,2',
             'description' => 'nullable',
         ],[], [
             'status' => 'estado' 
@@ -107,7 +111,7 @@ class DoctorController extends Controller
         $appointment->description = $request->input('description');
         $appointment->save();
 
-        return redirect('doctor/citas/list')->with('success', 'Cita completa');
+        return redirect()->back()->with('success', 'Estado de la cita actualizado correctamente');
     }
 
     public function syncOfflineAttendance(Request $request)
@@ -170,6 +174,28 @@ class DoctorController extends Controller
                 'dni' => $dni
             ], 404);
         }
+    }
+
+    // Método para filtrar citas por rango de fechas
+    public function filtrarCitas(Request $request)
+    {
+        $user = Auth::user();
+        $fechaInicio = $request->fecha_inicio;
+        $fechaFin = $request->fecha_fin;
+        
+        $appointments = Appointment::whereHas('doctor', function ($query) use ($user) {
+                            $query->where('id_user', $user->id);
+                        })
+                        ->whereBetween('date', [$fechaInicio, $fechaFin])
+                        ->with(['patient', 'doctor.specialization'])
+                        ->orderBy('date', 'asc')
+                        ->orderBy('time', 'asc')
+                        ->get();
+        
+        return response()->json([
+            'success' => true,
+            'appointments' => $appointments
+        ]);
     }
 
 }

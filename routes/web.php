@@ -114,7 +114,8 @@ Route::group(['middleware'=>'secretary'],function(){
 Route::group(['middleware'=>'doctor'],function(){
     //La vista del dashbaord
     Route::get('doctor/dashboard',[DashboardController::class,'dashboard']);
-    Route::get('doctor/citas/list',[DoctorController::class,'index']);
+    // Route::get('doctor/citas/list',[DoctorController::class,'index']); // Movido al dashboard
+    Route::get('doctor/citas/filtrar',[DoctorController::class,'filtrarCitas']);
     Route::get('doctor/attend/edit/{appointment}',[DoctorController::class,'edit']);
     Route::post('doctor/attend/edit/{appointment}',[DoctorController::class,'update']);
 });

@@ -27,6 +27,26 @@
             });
         </script>
     @endif
+    @if (session('error'))
+        <script>
+            let errorMessage = "{{ session('error') }}";
+            const ToastError = Swal.mixin({
+                toast: true,
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 4000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.onmouseenter = Swal.stopTimer;
+                    toast.onmouseleave = Swal.resumeTimer;
+                }
+            });
+            ToastError.fire({
+                icon: "error",
+                title: errorMessage
+            });
+        </script>
+    @endif
     @if (Auth::user()->user_level != 3)
         <div class="d-sm-flex align-items-center mb-4" style="justify-content: right;">
             <a class="btn btn-primary btn-sm d-none d-sm-inline-block" target="_blank" role="button"

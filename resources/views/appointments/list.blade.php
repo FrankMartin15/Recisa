@@ -27,6 +27,26 @@
                     title: message
                 });
             </script>            
+        @endif
+        @if (session('error'))
+            <script>
+                let errorMessage ="{{session('error')}}";
+                const ToastError = Swal.mixin({
+                    toast: true,
+                    position: "top-end",
+                    showConfirmButton: false,
+                    timer: 4000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.onmouseenter = Swal.stopTimer;
+                        toast.onmouseleave = Swal.resumeTimer;
+                    }
+                });
+                ToastError.fire({
+                    icon: "error",
+                    title: errorMessage
+                });
+            </script>            
         @endif   
 
         <div class="d-sm-flex align-items-center mb-4" style="justify-content: right;">
@@ -160,7 +180,44 @@
                                             <td class="text-center">
                                                 <div class="btn-group" role="group">
                                                     <a href="{{url('recisa/appoitnment/show/'.$appointment->id)}}" class="btn btn-primary" style="background: #48C9B0 !important;"><i class="fa-solid fa-eye"></i></a>
+                                                    @if($appointment->status == 0)
+                                                        <button type="button" class="btn btn-danger" style="background: #EB5C5E;"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#deleteModal-{{ $appointment->id }}">
+                                                            <i class="far fa-trash-alt"></i>
+                                                        </button>
+                                                    @endif
                                                 </div>
+                                                <!-- Modal de Eliminación -->
+                                                @if($appointment->status == 0)
+                                                <div class="modal fade" id="deleteModal-{{ $appointment->id }}"
+                                                    data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+                                                    aria-labelledby="deleteModalLabel-{{ $appointment->id }}" aria-hidden="true">
+                                                    <div class="modal-dialog modal-dialog-centered">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h1 class="modal-title fs-5" id="deleteModalLabel-{{ $appointment->id }}">
+                                                                    Desea Eliminar la Cita</h1>
+                                                                <button type="button" class="btn-close"
+                                                                    data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <p>Se eliminará la cita del paciente <strong>{{$appointment->patient->names}} {{$appointment->patient->surnames}}</strong> 
+                                                                programada para el <strong>{{date('d-m-Y', strtotime($appointment->date))}}</strong> a las <strong>{{$appointment->time}}</strong>.</p>
+                                                                <p class="text-muted small">El cupo será liberado automáticamente.</p>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary"
+                                                                    data-bs-dismiss="modal">Cancelar</button>
+                                                                <a href="{{ url('recisa/appointments/delete/' . $appointment->id) }}"
+                                                                    class="btn btn-danger" style="background: #EB5C5E;">
+                                                                    Eliminar
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                @endif
                                             </td>
                                         </tr>                                      
                                     @endforeach

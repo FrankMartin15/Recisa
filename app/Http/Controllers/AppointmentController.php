@@ -144,7 +144,12 @@ class AppointmentController extends Controller
 
     public function add(){
         // ... tu lógica existente ...
-        $quotas = UserSpecialization::with(['user', 'specialization'])->get();
+        // Solo doctores activos con asignación a especialidad
+        $quotas = UserSpecialization::with(['user', 'specialization'])
+            ->whereHas('user', function ($q) {
+                $q->where('user_level', 3)->where('status', 1);
+            })
+            ->get();
         $patients= Patient::all();
         $today=date('Y-m-d');
         $hour=Appointment::where('date', $today)->get(); // Esto obtiene todas las citas de hoy, no solo las horas.
@@ -156,6 +161,7 @@ class AppointmentController extends Controller
         // Doctores + especialidades + citas de HOY (para el modal "Ver Citas")
         $doctorsQuery = User::query()
             ->where('user_level', 3)
+            ->where('status', 1)
             ->whereHas('specializations')
             ->with([
                 'specializations.specialization',
@@ -359,7 +365,7 @@ class AppointmentController extends Controller
 
             DB::commit();
 
-            if ($request->expectsJson()) {
+            if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true, 
                     'message' => 'Cita registrada correctamente.',
@@ -371,7 +377,7 @@ class AppointmentController extends Controller
 
         } catch (ValidationException $e) { // Errores de validación específicos
             DB::rollBack();
-            if ($request->expectsJson()) {
+            if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Error de validación.',
@@ -381,7 +387,7 @@ class AppointmentController extends Controller
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (Exception $e) {
             DB::rollBack();
-            if ($request->expectsJson()) {
+            if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false, 
                     'message' => 'Error al registrar la cita: ' . $e->getMessage()
@@ -463,5 +469,36 @@ class AppointmentController extends Controller
         $currentDate = Carbon::now();
         $age = $currentDate->diffInYears($birthDate);
         return view('appointments.show',compact('appointment','clinical_histories', 'age'));
+    }
+
+    /**
+     * Eliminar cita (solo si status = 0 "Por atender")
+     * Nota: No se devuelve cupo porque los cupos se calculan dinámicamente
+     */
+    public function delete($id)
+    {
+        try {
+            $appointment = Appointment::findOrFail($id);
+            $user = Auth::user();
+
+            // Si es doctor, solo puede eliminar sus propias citas
+            if ($user && (int) $user->user_level === 3) {
+                $appointment->loadMissing(['doctor']);
+                if (!$appointment->doctor || (int) $appointment->doctor->id_user !== (int) $user->id) {
+                    return redirect()->back()->with('error', 'No tienes permisos para eliminar esta cita');
+                }
+            }
+
+            // Solo se pueden eliminar citas con status 0 (Por atender)
+            if ((int) $appointment->status !== 0) {
+                return redirect()->back()->with('error', 'Solo se pueden eliminar citas con estado "Por atender"');
+            }
+
+            $appointment->delete();
+
+            return redirect('recisa/appoitnment/list')->with('success', 'Cita eliminada correctamente');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Error al eliminar la cita: ' . $e->getMessage());
+        }
     }
 }

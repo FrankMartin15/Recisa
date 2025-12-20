@@ -3,6 +3,60 @@
 @push('css')
     <!--Alertas-->
     <script src="{{ asset('assets/js/sweetalert2@11.js') }}"></script>
+    <style>
+        /* Estilos para el tooltip personalizado */
+        .user-tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            text-decoration: underline dotted;
+        }
+        .user-tooltip .tooltip-content {
+            visibility: hidden;
+            opacity: 0;
+            background-color: #333;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            min-width: 200px;
+            max-width: 300px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .user-tooltip .tooltip-content::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+        }
+        .user-tooltip:hover .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+        }
+        .tooltip-content ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .tooltip-content li {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 12px;
+        }
+        .tooltip-content li:last-child {
+            border-bottom: none;
+        }
+    </style>
 @endpush
 @section('content')
     @if (session('success'))
@@ -71,11 +125,47 @@
                                         <td style="text-align:center">
                                             {{-- FORMA CORRECTA con @if/@elseif --}}
                                             @if ($value->group_level == 1)
-                                                {{ $admin }}
+                                                <span class="user-tooltip">
+                                                    {{ $admin }}
+                                                    @if($admin > 0)
+                                                    <div class="tooltip-content">
+                                                        <strong>Administradores:</strong>
+                                                        <ul>
+                                                            @foreach($adminUsers as $u)
+                                                                <li>{{ $u->names }} {{ $u->surnames }}</li>
+                                                            @endforeach
+                                                        </ul>
+                                                    </div>
+                                                    @endif
+                                                </span>
                                             @elseif ($value->group_level == 2)
-                                                {{ $secretary }}
+                                                <span class="user-tooltip">
+                                                    {{ $secretary }}
+                                                    @if($secretary > 0)
+                                                    <div class="tooltip-content">
+                                                        <strong>Secretarias:</strong>
+                                                        <ul>
+                                                            @foreach($secretaryUsers as $u)
+                                                                <li>{{ $u->names }} {{ $u->surnames }}</li>
+                                                            @endforeach
+                                                        </ul>
+                                                    </div>
+                                                    @endif
+                                                </span>
                                             @elseif ($value->group_level == 3)
-                                                {{ $doctor }}
+                                                <span class="user-tooltip">
+                                                    {{ $doctor }}
+                                                    @if($doctor > 0)
+                                                    <div class="tooltip-content">
+                                                        <strong>Doctores:</strong>
+                                                        <ul>
+                                                            @foreach($doctorUsers as $u)
+                                                                <li>{{ $u->names }} {{ $u->surnames }}</li>
+                                                            @endforeach
+                                                        </ul>
+                                                    </div>
+                                                    @endif
+                                                </span>
                                             @else
                                                 {{-- Para nuevos roles, asumimos 0 por ahora, o necesitarías una lógica más compleja en el controlador --}}
                                                 0

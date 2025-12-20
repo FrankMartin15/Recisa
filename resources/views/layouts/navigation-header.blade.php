@@ -51,7 +51,8 @@
                             <div id="notification-items">
                             @if (isset($doctors))
                                 @foreach ($doctors as $doctor)
-                                    <a class="dropdown-item d-flex align-items-center" href="#">
+                                    <a class="dropdown-item d-flex align-items-center"
+                                        href="{{ url('admin/assignment') }}?doctor_id={{ $doctor->user_id ?? '' }}&specialization_id={{ $doctor->specialization_id ?? '' }}">
                                         <div class="dropdown-list-image me-3">
                                             @if ($doctor->image == null)
                                                 <img class="border rounded-circle img-profile"
@@ -85,7 +86,7 @@
                                 @endforeach
                             @endif
                             </div>
-                            <a class="dropdown-item text-center small text-gray-500" href="#">Ver Todas</a>
+                            <a class="dropdown-item text-center small text-gray-500" href="{{ url('admin/assignment') }}">Ver Todas</a>
                         </div>
                     </div>
                 </li>

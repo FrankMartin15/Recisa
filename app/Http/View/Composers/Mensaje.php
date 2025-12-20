@@ -17,6 +17,9 @@ class Mensaje
         //Mostrar los doctores que no tiene cupo
         $view->with('doctors',
         User::select('specializations.name as specialization_name',
+            'specializations.id as specialization_id',
+            'users.id as user_id',
+            'user_specialization.id as quota_id',
             'user_specialization.cupo_doctor','users.image',
             'users.names as user_name','users.status as user_status')
             ->join('user_specialization', 'user_specialization.id_user', '=', 'users.id') 

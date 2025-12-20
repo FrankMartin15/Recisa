@@ -6,6 +6,22 @@
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap-select.min.css') }}">
     <!--CSS TABLA-->
     <link rel="stylesheet" href="{{ asset('assets/css/dataTables.bootstrap5.css') }}">
+
+    <style>
+        .specialization-rounded-left {
+            border-top-left-radius: 10px !important;
+            border-bottom-left-radius: 10px !important;
+            border-top-right-radius: 0 !important;
+            border-bottom-right-radius: 0 !important;
+        }
+
+        .specialization-rounded-right {
+            border-top-right-radius: 10px !important;
+            border-bottom-right-radius: 10px !important;
+            border-top-left-radius: 0 !important;
+            border-bottom-left-radius: 0 !important;
+        }
+    </style>
 @endpush
 @section('content')
     @if (session('success'))
@@ -62,29 +78,31 @@
                             <div class="col-md-7">
                                 <div class="mb-3">
                                     <div class="input-group">
-                                        <span class="input-group-text" id="basic-addon3">Nombre</span>
-                                        <input type="text" class="form-control" maxlength="30" id="basic-url"
+                                        <span class="input-group-text specialization-rounded-left" id="basic-addon3">Nombre</span>
+                                        <input type="text" class="form-control specialization-rounded-right" maxlength="30" id="basic-url"
                                             name="name_insert" aria-describedby="basic-addon3 basic-addon4"
+                                            pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo se permiten letras"
+                                            oninput="this.value=this.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g,'')"
                                             value="{{ old('name_insert') }}">
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-5">
                                 <div class="input-group mb-3">
-                                    <label class="input-group-text" for="quantity_voucher">#</label>
+                                    <label class="input-group-text specialization-rounded-left" for="quantity_voucher">#</label>
                                     <select title="...." data-style="btn-secondary"
-                                        class="form-select" id="quantity_voucher_insert"
+                                        class="form-select specialization-rounded-right" id="quantity_voucher_insert"
                                         name="quantity_voucher_insert">
-                                        <option value="1"
-                                            {{ old('quantity_voucher_insert') == '1' ? 'selected' : '' }}>1</option>
-                                        <option value="2"
-                                            {{ old('quantity_voucher_insert') == '2' ? 'selected' : '' }}>2</option>
-                                        <option value="3"
-                                            {{ old('quantity_voucher_insert') == '3' ? 'selected' : '' }}>3</option>
-                                        <option value="4"
-                                            {{ old('quantity_voucher_insert') == '4' ? 'selected' : '' }}>4</option>
-                                        <option value="5"
-                                            {{ old('quantity_voucher_insert') == '5' ? 'selected' : '' }}>5</option>
+                                        <option value="1" {{ old('quantity_voucher_insert') == '1' ? 'selected' : '' }}>1</option>
+                                        <option value="2" {{ old('quantity_voucher_insert') == '2' ? 'selected' : '' }}>2</option>
+                                        <option value="3" {{ old('quantity_voucher_insert') == '3' ? 'selected' : '' }}>3</option>
+                                        <option value="4" {{ old('quantity_voucher_insert') == '4' ? 'selected' : '' }}>4</option>
+                                        <option value="5" {{ old('quantity_voucher_insert') == '5' ? 'selected' : '' }}>5</option>
+                                        <option value="6" {{ old('quantity_voucher_insert') == '6' ? 'selected' : '' }}>6</option>
+                                        <option value="7" {{ old('quantity_voucher_insert') == '7' ? 'selected' : '' }}>7</option>
+                                        <option value="8" {{ old('quantity_voucher_insert') == '8' ? 'selected' : '' }}>8</option>
+                                        <option value="9" {{ old('quantity_voucher_insert') == '9' ? 'selected' : '' }}>9</option>
+                                        <option value="10" {{ old('quantity_voucher_insert') == '10' ? 'selected' : '' }}>10</option>
                                     </select>
                                 </div>
                             </div>
@@ -228,8 +246,8 @@
                     return;
                 }
 
-                if (isNaN(input.val()) || input.val() < 1 || input.val() > 20) {
-                    showModal('La especialidad debe tener mínimo 1 cupo o máximo 20');
+                if (isNaN(input.val()) || input.val() < 1 || input.val() > 10) {
+                    showModal('La especialidad debe tener mínimo 1 cupo o máximo 10');
                     return;
                 }
 

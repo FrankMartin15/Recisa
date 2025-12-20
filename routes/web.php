@@ -72,6 +72,9 @@ Route::group(['middleware'=>'admin'],function(){
     //Generar Reporte de Usuarios
     Route::get('admin/admin/reporte',[AdminController::class,'reporte']);
 
+    // Notificaciones: doctores sin cupos (polling)
+    Route::get('/admin/notifications/quota-check', [AdminController::class, 'quotaCheck']);
+
     //Rutas pra crear los grupos
     //La vista de los usuarios
     Route::get('/admin/rol/list',[UserGroupController::class,'list']);
@@ -138,6 +141,7 @@ Route::group(['middleware' => 'admin_or_secretary_or_doctor'], function () {
     Route::post('/recisa/appointments/add', [AppointmentController::class, 'insert']);
     Route::post('/recisa/appointments/insert', [AppointmentController::class, 'insert']); // API para IndexedDB
     Route::get('/recisa/appoitnment/show/{appointment}', [AppointmentController::class, 'show']);
+    Route::get('/recisa/appointments/delete/{id}', [AppointmentController::class, 'delete']);
     
     // Actualizar cupos del doctor
     Route::post('/recisa/quota/update', [AppointmentController::class, 'updateQuota']);

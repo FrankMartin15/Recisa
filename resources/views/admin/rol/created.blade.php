@@ -27,12 +27,15 @@
                         @csrf
                         <div class="row g-3 justify-content-center">
 
-                            <!-- CAMPO 1: Nombre del Rol (ahora usa name="slug") -->
+                            <!-- CAMPO 1: Nombre del Rol (ahora es un select) -->
                             <div class="col-md-6">
                                 <label for="slug" class="form-label">Nombre del Rol:</label>
-                                <input type="text" id="slug" name="slug" class="form-control" 
-                                       placeholder="Ej: Admin, Doctor y Secretaria" 
-                                       value="{{ old('slug') }}" required>
+                                <select id="slug" name="slug" class="form-select" required>
+                                    <option value="" disabled selected>Seleccione un rol</option>
+                                    <option value="admin" {{ old('slug') == 'admin' ? 'selected' : '' }}>Administrador</option>
+                                    <option value="doctor" {{ old('slug') == 'doctor' ? 'selected' : '' }}>Doctor</option>
+                                    <option value="secretaria" {{ old('slug') == 'secretaria' ? 'selected' : '' }}>Secretaria</option>
+                                </select>
                             </div>
 
                             <!-- CAMPO 2: Estado (Sin cambios) -->

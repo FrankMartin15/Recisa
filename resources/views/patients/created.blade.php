@@ -95,13 +95,13 @@
                     <form action="{{ url('/recisa/patients/add') }}" method="POST" id="patientForm">
                         @csrf
                         <div class="row g-3">
-                            <div class="col-md-2">
+                            <div class="col-md-4">
                                 <label for="dni" class="form-label">DNI:</label>
                                 <input readonly class="form-control" type="text" name="dni" id="dni"
                                     maxlength="8" minlength="8" required
                                     value="{{ old('dni') }}">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <label for="names" class="form-label">Nombres:</label>
                                 <input readonly class="form-control" type="text" name="names" id="names"
                                     value="{{ old('names') }}">
@@ -111,19 +111,19 @@
                                 <input readonly class="form-control" type="text" name="surnames" id="surnames"
                                     value="{{ old('surnames') }}">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <label for="phone" class="form-label">Número Historial:</label>
                                   <input class="form-control" maxlength="6" minlength="6" type="text"
                                       inputmode="numeric" pattern="\d{6}" autocomplete="off"
                                       name="history_number" id="history_number" value="{{ old('history_number') }}"
                                       oninput="this.value=this.value.replace(/\D/g,'').slice(0,6);">
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-4">
                                 <label for="phone" class="form-label">Celular:</label>
                                 <input class="form-control" maxlength="9" minlength="9" type="text" name="phone"
                                     id="phone" value="{{ old('phone') }}">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <label for="date" class="form-label">Fecha Nacimiento</label>
                                 <input type="date" name="date" id="date" class="form-control"
                                     max="{{ date('Y-m-d') }}" required

@@ -22,7 +22,13 @@ class UserGroupController extends Controller
         $admin=User::where('user_level',1)->count();
         $secretary=User::where('user_level',2)->count();
         $doctor=User::where('user_level',3)->count();
-        return view('admin.rol.list',compact('roles','admin','secretary','doctor'));
+        
+        // Obtener usuarios por nivel para el tooltip
+        $adminUsers = User::where('user_level', 1)->get(['names', 'surnames']);
+        $secretaryUsers = User::where('user_level', 2)->get(['names', 'surnames']);
+        $doctorUsers = User::where('user_level', 3)->get(['names', 'surnames']);
+        
+        return view('admin.rol.list',compact('roles','admin','secretary','doctor','adminUsers','secretaryUsers','doctorUsers'));
     }
     public function add(){
         return view('admin.rol.created');

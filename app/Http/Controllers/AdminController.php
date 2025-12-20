@@ -215,6 +215,9 @@ class AdminController extends Controller
             ->get()
             ->map(function ($quota) {
                 return [
+                    'quota_id' => $quota->id,
+                    'user_id' => $quota->user->id,
+                    'specialization_id' => $quota->specialization->id,
                     'id' => $quota->user->id,
                     'name' => $quota->user->names . ' ' . $quota->user->surnames,
                     'specialization' => $quota->specialization->name,

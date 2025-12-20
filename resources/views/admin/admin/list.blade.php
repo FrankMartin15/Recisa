@@ -27,6 +27,26 @@
     });
 </script>
 @endif
+@if (session('error'))
+<script>
+    let errorMessage = "{{ session('error') }}";
+    const ToastError = Swal.mixin({
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 4000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.onmouseenter = Swal.stopTimer;
+            toast.onmouseleave = Swal.resumeTimer;
+        }
+    });
+    ToastError.fire({
+        icon: "error",
+        title: errorMessage
+    });
+</script>
+@endif
 <div class="d-sm-flex align-items-center mb-4" style="justify-content: right;">
     <a class="btn btn-primary btn-sm d-none d-sm-inline-block me-4 offline-hide" id="btn-doctores" role="button" data-bs-toggle="modal"
         data-bs-target="#modalDoctores"
@@ -106,7 +126,7 @@
                         <tbody>
                             @foreach ($users as $user)
                             <tr>
-                                <td>
+                                <td class="text-center">
                                     <div class="nav-item dropdown no-arrow">
                                         @if ($user->image == null)
                                         <img src="https://i.postimg.cc/hjSBbZX4/doctor.png"
@@ -119,11 +139,11 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td>{{ $user->dni }}</td>
-                                <td>{{ $user->names }}, {{ $user->surnames }}</td>
-                                <td>{{ $user->phone }}</td>
-                                <td>{{ $user->email }}</td>
-                                <td>
+                                <td class="text-center">{{ $user->dni }}</td>
+                                <td class="text-center">{{ $user->names }}, {{ $user->surnames }}</td>
+                                <td class="text-center">{{ $user->phone }}</td>
+                                <td class="text-center">{{ $user->email }}</td>
+                                <td class="text-center">
                                     @switch($user->user_level)
                                     @case(1)
                                     Admin
@@ -140,14 +160,14 @@
                                     @default
                                     @endswitch
                                 </td>
-                                <td>
+                                <td class="text-center">
                                     @if ($user->status == 1)
                                     <span class="fw-bolder p-1 rounded bg-success text-white">Activo</span>
                                     @else
                                     <span class="fw-bolder p-1 rounded bg-danger text-white">Desactivado</span>
                                     @endif
                                 </td>
-                                <td>{{ date('d-m-Y', strtotime($user->created_at)) }}</td>
+                                <td class="text-center">{{ date('d-m-Y', strtotime($user->created_at)) }}</td>
                                 <td class="text-center">
                                     <div class="btn-group" role="group">
                                         <a href="{{ url('admin/admin/edit/' . $user->slug) }}"

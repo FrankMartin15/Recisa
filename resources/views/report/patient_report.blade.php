@@ -203,7 +203,7 @@
     <header class="clearfix">
         <div id="company">
             <h2 class="name">RECISA</h2>
-            <div>Av. Francisco Irazola S/N Santa Rosa De Ocopa Concepción Junín</div>
+            <div>JIRON HUAYNA CAPAC S/N, SAUSA, JAUJA</div>
             <div>Centro de Salud Integral</div>
         </div>
         <div id="logo">

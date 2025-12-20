@@ -713,6 +713,8 @@ $(document).ready(function() {
                 url: form.attr('action'),
                 method: 'POST',
                 data: form.serialize(),
+                dataType: 'json',
+                headers: { 'Accept': 'application/json' },
                 success: function(response) {
                     console.log('✅ Respuesta del servidor:', response);
                     
@@ -727,17 +729,25 @@ $(document).ready(function() {
                     btnText.removeClass('d-none');
                     btnSpinner.addClass('d-none');
                     
-                    // Mostrar mensaje de éxito
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Cita Registrada',
-                        text: 'La cita ha sido registrada exitosamente.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    }).then(() => {
-                        // Recargar la página para actualizar la lista de citas
-                        location.reload();
+                    // Mostrar mensaje de éxito (toast arriba-derecha)
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 1800,
+                        timerProgressBar: true,
+                        didOpen: (toast) => {
+                            toast.onmouseenter = Swal.stopTimer;
+                            toast.onmouseleave = Swal.resumeTimer;
+                        }
                     });
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'Cita registrada'
+                    });
+
+                    // Recargar para actualizar la tabla/modales de "Citas Programadas Hoy"
+                    setTimeout(() => location.reload(), 1200);
                 },
                 error: function(xhr) {
                     console.error('❌ Error del servidor:', xhr);
@@ -753,13 +763,23 @@ $(document).ready(function() {
                         errorMessage = xhr.responseJSON.message;
                     } else if (xhr.responseJSON && xhr.responseJSON.errors) {
                         const errors = Object.values(xhr.responseJSON.errors).flat();
-                        errorMessage = errors.join('<br>');
+                        errorMessage = errors.join(' • ');
                     }
-                    
-                    Swal.fire({
+
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 4000,
+                        timerProgressBar: true,
+                        didOpen: (toast) => {
+                            toast.onmouseenter = Swal.stopTimer;
+                            toast.onmouseleave = Swal.resumeTimer;
+                        }
+                    });
+                    Toast.fire({
                         icon: 'error',
-                        title: 'Error',
-                        html: errorMessage
+                        title: errorMessage
                     });
                 }
             });
@@ -796,12 +816,20 @@ $(document).ready(function() {
                     btnSpinner.addClass('d-none');
                     
                     // Mostrar mensaje de éxito offline
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Cita Guardada Localmente',
-                        text: 'La cita se enviará al servidor cuando recupere la conexión.',
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
                         timer: 3000,
-                        showConfirmButton: false
+                        timerProgressBar: true,
+                        didOpen: (toast) => {
+                            toast.onmouseenter = Swal.stopTimer;
+                            toast.onmouseleave = Swal.resumeTimer;
+                        }
+                    });
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'Cita guardada localmente'
                     });
                 }, 500);
                 

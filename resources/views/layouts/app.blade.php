@@ -97,9 +97,14 @@
                                     : 'https://i.postimg.cc/hjSBbZX4/doctor.png';
                                 
                                 let statusClass = doctor.status == '1' ? 'bg-success' : 'bg-warning';
+
+                                let href = `/admin/assignment?doctor_id=${encodeURIComponent(doctor.user_id ?? doctor.id ?? '')}`;
+                                if (doctor.specialization_id) {
+                                    href += `&specialization_id=${encodeURIComponent(doctor.specialization_id)}`;
+                                }
                                 
                                 html += `
-                                    <a class="dropdown-item d-flex align-items-center" href="#">
+                                    <a class="dropdown-item d-flex align-items-center" href="${href}">
                                         <div class="dropdown-list-image me-3">
                                             <img class="border rounded-circle img-profile" 
                                                  src="${imgUrl}" 

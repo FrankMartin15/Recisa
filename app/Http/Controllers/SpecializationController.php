@@ -32,7 +32,7 @@ class SpecializationController extends Controller
     public function update($id,Request $request){
         //Valiadaciones
         request()->validate([
-            'quantity_voucher_update' => 'required'
+            'quantity_voucher_update' => 'required|integer|min:1|max:21'
         ], [], [
             'quantity_voucher_update' => 'cupos' 
         ]);

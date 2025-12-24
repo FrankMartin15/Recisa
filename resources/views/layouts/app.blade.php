@@ -43,6 +43,11 @@
     <link rel="stylesheet" href="{{asset('assets/css/menu_bar.css')}}">
     <script src="{{asset('assets/js/fontawesome-kit.js')}}"></script>
     <!--Menu Bar-->
+    
+    <!--SweetAlert2-->
+    <script src="{{ asset('assets/js/sweetalert2@11.js') }}"></script>
+    <!--SweetAlert2-->
+    
     @stack('css')
 </head>
 

@@ -103,6 +103,17 @@
                                         <option value="8" {{ old('quantity_voucher_insert') == '8' ? 'selected' : '' }}>8</option>
                                         <option value="9" {{ old('quantity_voucher_insert') == '9' ? 'selected' : '' }}>9</option>
                                         <option value="10" {{ old('quantity_voucher_insert') == '10' ? 'selected' : '' }}>10</option>
+                                        <option value="11" {{ old('quantity_voucher_insert') == '11' ? 'selected' : '' }}>11</option>
+                                        <option value="12" {{ old('quantity_voucher_insert') == '12' ? 'selected' : '' }}>12</option>
+                                        <option value="13" {{ old('quantity_voucher_insert') == '13' ? 'selected' : '' }}>13</option>
+                                        <option value="14" {{ old('quantity_voucher_insert') == '14' ? 'selected' : '' }}>14</option>
+                                        <option value="15" {{ old('quantity_voucher_insert') == '15' ? 'selected' : '' }}>15</option>
+                                        <option value="16" {{ old('quantity_voucher_insert') == '16' ? 'selected' : '' }}>16</option>
+                                        <option value="17" {{ old('quantity_voucher_insert') == '17' ? 'selected' : '' }}>17</option>
+                                        <option value="18" {{ old('quantity_voucher_insert') == '18' ? 'selected' : '' }}>18</option>
+                                        <option value="19" {{ old('quantity_voucher_insert') == '19' ? 'selected' : '' }}>19</option>
+                                        <option value="20" {{ old('quantity_voucher_insert') == '20' ? 'selected' : '' }}>20</option>
+                                        <option value="21" {{ old('quantity_voucher_insert') == '21' ? 'selected' : '' }}>21</option>
                                     </select>
                                 </div>
                             </div>
@@ -246,8 +257,8 @@
                     return;
                 }
 
-                if (isNaN(input.val()) || input.val() < 1 || input.val() > 10) {
-                    showModal('La especialidad debe tener mínimo 1 cupo o máximo 10');
+                if (isNaN(input.val()) || input.val() < 1 || input.val() > 21) {
+                    showModal('La especialidad debe tener mínimo 1 cupo o máximo 21');
                     return;
                 }
 

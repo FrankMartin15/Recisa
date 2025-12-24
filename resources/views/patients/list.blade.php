@@ -47,15 +47,13 @@
             });
         </script>
     @endif
-    @if (Auth::user()->user_level != 3)
-        <div class="d-sm-flex align-items-center mb-4" style="justify-content: right;">
-            <a class="btn btn-primary btn-sm d-none d-sm-inline-block" target="_blank" role="button"
-                href="{{ url('recisa/patients/reporte') }}"
-                style="--bs-primary: #00486E;--bs-primary-rgb: 0,72,110;--bs-body-bg: #00476D;background: #00476D !important;">
-                <i class="fas fa-download fa-sm text-white-50"></i>&nbsp;Generar Reporte
-            </a>
-        </div>
-    @endif
+    <div class="d-sm-flex align-items-center mb-4" style="justify-content: right;">
+        <a class="btn btn-primary btn-sm d-none d-sm-inline-block" target="_blank" role="button"
+            href="{{ url('recisa/patients/reporte') }}"
+            style="--bs-primary: #00486E;--bs-primary-rgb: 0,72,110;--bs-body-bg: #00476D;background: #00476D !important;">
+            <i class="fas fa-download fa-sm text-white-50"></i>&nbsp;Generar Reporte
+        </a>
+    </div>
     <div class="row">
         <div class="col">
             <div class="card shadow">
@@ -73,10 +71,8 @@
                                     <th style="width: 100px; font-weight:bold; text-align: left;">Celular</th>
                                     <th style="width: 300px; font-weight:bold; text-align: left;">Edad</th>
                                     <th style="width: 300px; font-weight:bold; text-align: left;">Creación</th>
-                                    @if (Auth::user()->user_level != 3)
-                                        <th style="width: 300px; text-align: center !important; font-weight:bold;">Opciones</th>
-                                        <th style="width: 300px; text-align: center !important; font-weight:bold;">Reporte</th>
-                                    @endif
+                                    <th style="width: 300px; text-align: center !important; font-weight:bold;">Opciones</th>
+                                    <th style="width: 300px; text-align: center !important; font-weight:bold;">Reporte</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -94,8 +90,7 @@
                                             @endif
                                         </td>
                                         <td>{{ date('d-m-Y', strtotime($patient->created_at)) }}</td>
-                                        @if (Auth::user()->user_level != 3)
-                                            <td class="text-center">
+                                        <td class="text-center">
                                                 <div class="btn-group" role="group">
                                                     <a href="{{ url('recisa/patients/edit/' . $patient->slug) }}"
                                                         class="btn btn-primary" style="background: #7BDE7C;"><i
@@ -144,12 +139,11 @@
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td class="text-center">
-                                                <a href="{{ url('recisa/patients/reporte/' . $patient->dni) }}" target="_blank"
-                                                    class="btn btn-primary" style="background: #58D68D !important;"><i
-                                                        class="fa-solid fa-file-pdf"></i></a>
-                                            </td>
-                                        @endif
+                                        <td class="text-center">
+                                            <a href="{{ url('recisa/patients/reporte/' . $patient->dni) }}" target="_blank"
+                                                class="btn btn-primary" style="background: #58D68D !important;"><i
+                                                    class="fa-solid fa-file-pdf"></i></a>
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>

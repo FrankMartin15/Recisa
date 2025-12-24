@@ -149,6 +149,7 @@
                                                         data-citas="{{ $citasHoy }}"
                                                         data-specialization-id="{{ $quota->id_specialization }}"
                                                         data-specialization-total="{{ $quota->specialization->quantity_voucher }}"
+                                                        data-tokens="{{ $quota->specialization->name }} {{ $quota->user->names }} {{ $quota->user->surnames }}"
                                                         {{ (old('id_quota') == $quota->id || ($isDoctorUser && $doctorQuotaId == $quota->id)) ? 'selected' : '' }} 
                                                         {{ $cuposRestantes <= 0 ? 'disabled' : '' }}>
                                                     {{ $quota->specialization->name }}
@@ -158,7 +159,8 @@
                                             {{-- Vista para otros roles: información simple --}}
                                             <optgroup label="{{ $quota->user->surnames }}, {{ $quota->user->names }} -> cupos: {{ $quota->cupo_doctor }}">
                                                 <option value="{{ $quota->id }}" 
-                                                        data-doctor-id="{{ $quota->user->id }}" 
+                                                        data-doctor-id="{{ $quota->user->id }}"
+                                                        data-tokens="{{ $quota->specialization->name }} {{ $quota->user->names }} {{ $quota->user->surnames }}" 
                                                         {{ old('id_quota') == $quota->id ? 'selected' : '' }} 
                                                         {{ $quota->cupo_doctor == 0 ? 'disabled' : '' }}>
                                                     {{ $quota->specialization->name }}
@@ -200,7 +202,10 @@
                                     <span class="input-group-text">
                                         <i class="fa-solid fa-calendar-days text-primary"></i>
                                     </span>
-                                    <input type="date" name="date" id="date" class="form-control" value="{{ old('date', date('Y-m-d')) }}" required>
+                                    <input type="date" name="date" id="date" class="form-control" 
+                                           value="{{ old('date', \Carbon\Carbon::now('America/Lima')->format('Y-m-d')) }}" 
+                                           min="{{ \Carbon\Carbon::now('America/Lima')->format('Y-m-d') }}" 
+                                           required>
                                 </div>
                             </div>
                             
@@ -434,9 +439,10 @@ $(document).ready(function() {
     actualizarAvisoCuposOffline();
     ensureWeekdaySelected(false);
 
-    // Al cambiar la fecha, forzar lunes-viernes
+    // Al cambiar la fecha, forzar lunes-viernes y regenerar horas
     $('#date').on('change', function() {
         ensureWeekdaySelected(true);
+        regenerarHorasDisponibles(); // Regenerar horas para filtrar horas pasadas si es hoy
     });
 
     // Listeners para cambios de conexión
@@ -572,9 +578,33 @@ $(document).ready(function() {
         
         var selectTime = $('#time');
         var horasManana = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00'];
-        var horasTarde = ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'];
+        var horasTarde = ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
         
         console.log('⏰ Horas reservadas:', reservedHours);
+        
+        // Obtener la fecha seleccionada
+        var fechaSeleccionada = $('#date').val();
+        
+        // Obtener fecha de hoy (usar fecha local del navegador)
+        var fechaHoyDate = new Date();
+        var year = fechaHoyDate.getFullYear();
+        var month = (fechaHoyDate.getMonth() + 1).toString().padStart(2, '0');
+        var day = fechaHoyDate.getDate().toString().padStart(2, '0');
+        var fechaHoy = year + '-' + month + '-' + day;
+        
+        var esHoy = fechaSeleccionada === fechaHoy;
+        
+        console.log('📅 Fecha seleccionada:', fechaSeleccionada);
+        console.log('📅 Fecha hoy:', fechaHoy);
+        console.log('📅 Es hoy?:', esHoy);
+        
+        // Obtener hora actual en minutos desde medianoche para comparación precisa
+        var minutosActuales = 0;
+        if (esHoy) {
+            var ahora = new Date();
+            minutosActuales = ahora.getHours() * 60 + ahora.getMinutes();
+            console.log('⏰ Es hoy, hora actual:', ahora.getHours() + ':' + ahora.getMinutes().toString().padStart(2, '0'), '(minutos:', minutosActuales, ')');
+        }
         
         // Limpiar completamente el select
         selectTime.empty();
@@ -583,10 +613,28 @@ $(document).ready(function() {
             let optgroup = $(`<optgroup label="${turno}">`);
             let hasSlots = false;
             horas.forEach(hora => {
-                if (!reservedHours.includes(hora)) {
-                    optgroup.append(`<option value="${hora}">${hora}</option>`);
-                    hasSlots = true;
+                // Filtrar horas reservadas
+                if (reservedHours.includes(hora)) {
+                    console.log('⏰ Hora descartada (reservada):', hora);
+                    return;
                 }
+                
+                // Si es hoy, filtrar horas pasadas
+                if (esHoy) {
+                    // Convertir hora a minutos desde medianoche
+                    var partesHora = hora.split(':');
+                    var minutosHora = parseInt(partesHora[0]) * 60 + parseInt(partesHora[1]);
+                    
+                    // Comparar: si la hora de la cita ya pasó, no mostrarla
+                    if (minutosHora <= minutosActuales) {
+                        console.log('⏰ Hora descartada (pasada):', hora, '- Minutos hora:', minutosHora, 'vs actuales:', minutosActuales);
+                        return;
+                    }
+                }
+                
+                console.log('✅ Hora agregada:', hora);
+                optgroup.append(`<option value="${hora}">${hora}</option>`);
+                hasSlots = true;
             });
             if (hasSlots) {
                 selectTime.append(optgroup);
@@ -614,9 +662,39 @@ $(document).ready(function() {
     
     // Inicializar selectpickers
     $('.selectpicker').selectpicker();
+    
+    // FORZAR la fecha correcta (hoy) SIEMPRE al cargar la página
+    var fechaHoyJS = new Date();
+    // Usar fecha local del navegador (ya está en timezone correcto)
+    var year = fechaHoyJS.getFullYear();
+    var month = (fechaHoyJS.getMonth() + 1).toString().padStart(2, '0');
+    var day = fechaHoyJS.getDate().toString().padStart(2, '0');
+    var fechaHoyFormato = year + '-' + month + '-' + day;
+    
+    console.log('🔧 FORZANDO fecha al cargar...');
+    console.log('🔧 Fecha local del navegador:', fechaHoyJS.toString());
+    console.log('🔧 Fecha hoy formateada:', fechaHoyFormato);
+    
+    // SIEMPRE establecer la fecha de hoy si no hay old('date')
+    var oldDate = '{{ old("date") }}';
+    if (!oldDate || oldDate === '') {
+        console.log('✅ Estableciendo fecha de hoy en el input');
+        $('#date').val(fechaHoyFormato);
+    } else {
+        console.log('⚠️ Hay old date:', oldDate);
+        // Verificar si old date es anterior a hoy, si es así, usar hoy
+        if (oldDate < fechaHoyFormato) {
+            console.log('⚠️ Old date es anterior a hoy, usando hoy');
+            $('#date').val(fechaHoyFormato);
+        }
+    }
+    
+    console.log('🔧 Fecha final en input:', $('#date').val());
 
-    // Configurar horas disponibles INICIALMENTE
-    regenerarHorasDisponibles();
+    // Configurar horas disponibles INICIALMENTE (después de asegurar la fecha)
+    setTimeout(function() {
+        regenerarHorasDisponibles();
+    }, 100);
 
     // ⭐ CONFIGURAR DATATABLES UNA SOLA VEZ
     if (!$.fn.DataTable.isDataTable('#asignaciones')) {

@@ -23,7 +23,7 @@ class StoreSpecializationRequest extends FormRequest
     {
         return [
             'name_insert'=>'required|string|regex:/^[\pL\s]+$/u|max:30|unique:specializations,name',
-            'quantity_voucher_insert'=>'required',
+            'quantity_voucher_insert'=>'required|integer|min:1|max:21',
         ];
     }
     public function attributes(){

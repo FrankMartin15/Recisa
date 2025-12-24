@@ -151,7 +151,8 @@ class AppointmentController extends Controller
             })
             ->get();
         $patients= Patient::all();
-        $today=date('Y-m-d');
+        // Usar Carbon con timezone de Perú para obtener la fecha correcta
+        $today = Carbon::now('America/Lima')->format('Y-m-d');
         $hour=Appointment::where('date', $today)->get(); // Esto obtiene todas las citas de hoy, no solo las horas.
                                                      // Considera: $hour = Appointment::where('date', $today)->pluck('time')->toArray();
                                                      // Y luego en la vista `var reservedHours = @json($hour);` sería un array de strings.

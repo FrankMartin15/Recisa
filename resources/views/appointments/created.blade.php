@@ -577,6 +577,8 @@ $(document).ready(function() {
         console.log('🕐 Regenerando horas disponibles...');
         
         var selectTime = $('#time');
+        // Preservar el valor seleccionado antes de regenerar
+        const prevVal = selectTime.val();
         var horasManana = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00'];
         var horasTarde = ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
         
@@ -644,8 +646,13 @@ $(document).ready(function() {
         agregarHoras(horasManana, 'Turno Mañana');
         agregarHoras(horasTarde, 'Turno Tarde');
         
-        // Refrescar el selectpicker
+        // Si la hora previamente seleccionada sigue disponible, mantenerla
+        if (prevVal && selectTime.find(`option[value="${prevVal}"]`).length > 0) {
+            selectTime.val(prevVal);
+        }
+        // Refrescar el selectpicker y renderizar
         selectTime.selectpicker('refresh');
+        selectTime.selectpicker('render');
         
         console.log('✅ Horas regeneradas, total opciones:', $('#time option').length);
         
@@ -662,6 +669,17 @@ $(document).ready(function() {
     
     // Inicializar selectpickers
     $('.selectpicker').selectpicker();
+
+    // Asegurar que al seleccionar una hora se refleje inmediatamente en el botón
+    $('#time').on('changed.bs.select', function() {
+        // Marcar que el formulario está en uso para evitar reseteos
+        formHasData = true;
+        resetEnabled = false;
+        // Forzar refresco/render para que se muestre el texto seleccionado
+        $('#time').selectpicker('refresh');
+        $('#time').selectpicker('render');
+        console.log('🕑 Hora seleccionada:', $('#time').val());
+    });
     
     // FORZAR la fecha correcta (hoy) SIEMPRE al cargar la página
     var fechaHoyJS = new Date();
@@ -767,6 +785,11 @@ $(document).ready(function() {
     $('#appointment-form').on('submit', function(event) {
         event.preventDefault();
 
+        // Marcar que el formulario está en proceso de envío
+        formHasData = true;
+        resetEnabled = false;
+        console.log('📝 Formulario en proceso de envío - Reseteo bloqueado');
+
         // Asegurar que la fecha enviada sea día hábil
         ensureWeekdaySelected(true);
         
@@ -802,6 +825,11 @@ $(document).ready(function() {
                     restaurarSelectPickersCompleto();
                     regenerarHorasDisponibles();
                     
+                    // Reactivar reseteo automático después de guardar exitosamente
+                    resetEnabled = true;
+                    formHasData = false;
+                    console.log('♻️ Reseteo automático reactivado después de guardar cita');
+                    
                     // Restaurar botón
                     submitBtn.prop('disabled', false);
                     btnText.removeClass('d-none');
@@ -829,6 +857,10 @@ $(document).ready(function() {
                 },
                 error: function(xhr) {
                     console.error('❌ Error del servidor:', xhr);
+                    
+                    // Mantener el formulario sin resetear para que el usuario pueda corregir
+                    // NO reactivamos el reseteo aquí para que el usuario conserve sus datos
+                    console.log('⚠️ Error al guardar - Formulario conservado para corrección');
                     
                     // Restaurar botón
                     submitBtn.prop('disabled', false);
@@ -883,6 +915,11 @@ $(document).ready(function() {
                     restaurarSelectPickersCompleto();
                     regenerarHorasDisponibles();
                     
+                    // Reactivar reseteo automático después de guardar exitosamente en modo offline
+                    resetEnabled = true;
+                    formHasData = false;
+                    console.log('♻️ Reseteo automático reactivado después de guardar cita (modo offline)');
+                    
                     // Actualizar modal si es necesario
                     if (doctorId && patientName && appointmentTime) {
                         actualizarModalDeCitas(doctorId, patientName, appointmentTime);
@@ -913,6 +950,9 @@ $(document).ready(function() {
                 
             } else {
                 // Si no hay sistema offline disponible
+                // Mantener el formulario sin resetear para que el usuario pueda intentar de nuevo
+                console.log('⚠️ Sistema offline no disponible - Formulario conservado');
+                
                 submitBtn.prop('disabled', false);
                 btnText.removeClass('d-none');
                 btnSpinner.addClass('d-none');
@@ -926,26 +966,65 @@ $(document).ready(function() {
         }
     });
 
-    // ⭐ VARIABLES PARA CONTROLAR INTERACCIÓN DEL USUARIO
+    // ⭐ VARIABLES PARA CONTROLAR INTERACCIÓN DEL USUARIO Y RESETEO
     let userIsInteracting = false;
     let lastInteractionTime = Date.now();
+    let resetEnabled = true; // Controla si el reseteo automático está habilitado
+    let formHasData = false; // Bandera para detectar si el formulario tiene datos
 
     // Detectar cuando el usuario está seleccionando opciones
-    $('#id_quota, #id_patient, #time').on('focus mousedown', function() {
+    $('#id_quota, #id_patient, #time, #date').on('focus mousedown', function() {
         userIsInteracting = true;
         lastInteractionTime = Date.now();
     });
 
-    $('#id_quota, #id_patient, #time').on('blur change', function() {
+    $('#id_quota, #id_patient, #time, #date').on('blur change', function() {
         setTimeout(() => {
             userIsInteracting = false;
         }, 2000); // Esperar 2 segundos después de la última interacción
+    });
+
+    // Función para verificar si el formulario tiene datos
+    function checkFormHasData() {
+        const quotaValue = $('#id_quota').val();
+        const patientValue = $('#id_patient').val();
+        const timeValue = $('#time').val();
+        const dateValue = $('#date').val();
+        
+        // Si cualquier campo tiene un valor válido, el formulario tiene datos
+        const hasData = (quotaValue && quotaValue.trim() !== '') || 
+                       (patientValue && patientValue.trim() !== '') || 
+                       (timeValue && timeValue.trim() !== '');
+        
+        if (hasData) {
+            formHasData = true;
+            resetEnabled = false; // Detener el reseteo automático
+            console.log('✅ Formulario en uso - Reseteo deshabilitado');
+        } else {
+            formHasData = false;
+            resetEnabled = true; // Reactivar el reseteo automático
+            console.log('⚪ Formulario vacío - Reseteo habilitado');
+        }
+        
+        return hasData;
+    }
+
+    // Detectar cuando se llena cualquier campo del formulario
+    $('#id_quota, #id_patient, #time, #date').on('change', function() {
+        checkFormHasData();
     });
 
     // ⭐ VERIFICACIÓN INTELIGENTE DE DUPLICADOS (NO INTERFIERE CON INTERACCIÓN)
     setInterval(function() {
         // Evitar resetear mientras el usuario interactúa con los selects
         if ($('.bootstrap-select.show').length > 0) {
+            console.log('⏸️ Reseteo pausado - Dropdown abierto');
+            return;
+        }
+
+        // No resetear si el formulario tiene datos y el reseteo está deshabilitado
+        if (!resetEnabled || formHasData) {
+            console.log('⏸️ Reseteo pausado - Formulario tiene datos o está en uso');
             return;
         }
 
@@ -972,7 +1051,7 @@ $(document).ready(function() {
             console.log('⚠️ Opciones duplicadas/vacías detectadas, restaurando...');
             restaurarSelectPickersCompleto();
         }
-    }, 15000);
+    }, 60000); // Cambiado de 15000 (15 segundos) a 60000 (60 segundos)
 
     // ⭐ FUNCIÓN PARA MOSTRAR CITAS PENDIENTES DE SINCRONIZACIÓN
     async function loadPendingAppointments() {

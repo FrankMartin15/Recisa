@@ -639,10 +639,32 @@ $(document).ready(function() {
         // Marcar que el formulario está en uso para evitar reseteos
         formHasData = true;
         resetEnabled = false;
-        // Forzar refresco/render para que se muestre el texto seleccionado
-        $('#time').selectpicker('refresh');
-        $('#time').selectpicker('render');
-        console.log('🕑 Hora seleccionada:', $('#time').val());
+
+        const $time = $('#time');
+        const val = $time.val();
+
+        // Forzar selección única: limpiar cualquier selección previa
+        $time.find('option').prop('selected', false);
+        if (val) {
+            $time.find(`option[value="${val}"]`).prop('selected', true);
+        }
+
+        // Actualizar estado del plugin y el texto del botón
+        $time.selectpicker('val', val);
+        $time.selectpicker('refresh');
+        $time.selectpicker('render');
+
+        console.log('🕑 Hora seleccionada:', val);
+    });
+
+    // Redundancia defensiva: asegurar selección única también en cambio nativo
+    $('#time').on('change', function() {
+        const $time = $('#time');
+        const val = $time.val();
+        $time.find('option').prop('selected', false);
+        if (val) {
+            $time.find(`option[value="${val}"]`).prop('selected', true);
+        }
     });
     
     // FORZAR la fecha correcta (hoy) SIEMPRE al cargar la página

@@ -439,10 +439,10 @@ $(document).ready(function() {
     actualizarAvisoCuposOffline();
     ensureWeekdaySelected(false);
 
-    // Al cambiar la fecha, forzar lunes-viernes y regenerar horas
+    // Al cambiar la fecha, forzar lunes-viernes SIN afectar las horas
     $('#date').on('change', function() {
         ensureWeekdaySelected(true);
-        regenerarHorasDisponibles(); // Regenerar horas para filtrar horas pasadas si es hoy
+        // No modificar el select de horas al cambiar la fecha
     });
 
     // Listeners para cambios de conexión
@@ -584,29 +584,7 @@ $(document).ready(function() {
         
         console.log('⏰ Horas reservadas:', reservedHours);
         
-        // Obtener la fecha seleccionada
-        var fechaSeleccionada = $('#date').val();
-        
-        // Obtener fecha de hoy (usar fecha local del navegador)
-        var fechaHoyDate = new Date();
-        var year = fechaHoyDate.getFullYear();
-        var month = (fechaHoyDate.getMonth() + 1).toString().padStart(2, '0');
-        var day = fechaHoyDate.getDate().toString().padStart(2, '0');
-        var fechaHoy = year + '-' + month + '-' + day;
-        
-        var esHoy = fechaSeleccionada === fechaHoy;
-        
-        console.log('📅 Fecha seleccionada:', fechaSeleccionada);
-        console.log('📅 Fecha hoy:', fechaHoy);
-        console.log('📅 Es hoy?:', esHoy);
-        
-        // Obtener hora actual en minutos desde medianoche para comparación precisa
-        var minutosActuales = 0;
-        if (esHoy) {
-            var ahora = new Date();
-            minutosActuales = ahora.getHours() * 60 + ahora.getMinutes();
-            console.log('⏰ Es hoy, hora actual:', ahora.getHours() + ':' + ahora.getMinutes().toString().padStart(2, '0'), '(minutos:', minutosActuales, ')');
-        }
+        // Siempre mostrar ambos turnos; no filtrar por fecha/hora actual
         
         // Limpiar completamente el select
         selectTime.empty();
@@ -621,26 +599,12 @@ $(document).ready(function() {
                     return;
                 }
                 
-                // Si es hoy, filtrar horas pasadas
-                if (esHoy) {
-                    // Convertir hora a minutos desde medianoche
-                    var partesHora = hora.split(':');
-                    var minutosHora = parseInt(partesHora[0]) * 60 + parseInt(partesHora[1]);
-                    
-                    // Comparar: si la hora de la cita ya pasó, no mostrarla
-                    if (minutosHora <= minutosActuales) {
-                        console.log('⏰ Hora descartada (pasada):', hora, '- Minutos hora:', minutosHora, 'vs actuales:', minutosActuales);
-                        return;
-                    }
-                }
-                
                 console.log('✅ Hora agregada:', hora);
                 optgroup.append(`<option value="${hora}">${hora}</option>`);
                 hasSlots = true;
             });
-            if (hasSlots) {
-                selectTime.append(optgroup);
-            }
+            // Siempre agregar el optgroup para mostrar Turno Mañana/Tarde, aunque esté vacío
+            selectTime.append(optgroup);
         }
         
         agregarHoras(horasManana, 'Turno Mañana');

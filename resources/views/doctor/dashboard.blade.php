@@ -408,6 +408,9 @@
 let table = $('#especialidades').DataTable({
     responsive: true,
     autoWidth:false,
+    columnDefs: [
+        { targets: '_all', defaultContent: '' }
+    ],
     "language": {
         "lengthMenu": "Mostrar "+
                         `<select class="custom-select custom-select-sm w-50 form-select form-select-sm mb-2">
@@ -474,11 +477,9 @@ $('#btn_filtrar').on('click', function() {
             Swal.close();
             
             if (response.success) {
-                // Destruir la tabla actual
-                table.destroy();
-                
-                // Actualizar el tbody
-                let tbody = '';
+                // Limpiar y cargar filas usando la API de DataTables
+                table.clear();
+
                 if (response.appointments.length > 0) {
                     response.appointments.forEach((appointment, index) => {
                         let statusBadge = '';
@@ -489,55 +490,25 @@ $('#btn_filtrar').on('click', function() {
                         } else if (appointment.status == 2) {
                             statusBadge = '<span class="badge bg-danger">No Asistió</span>';
                         }
-                        
-                        tbody += `
-                            <tr>
-                                <td style="text-align: left">${index + 1}</td>
-                                <td style="text-align: left">${appointment.patient.names} ${appointment.patient.surnames}</td>
-                                <td style="text-align: left">${appointment.doctor.specialization.name}</td>
-                                <td style="text-align: left">${appointment.date}</td>
-                                <td style="text-align: left">${appointment.time}</td>
-                                <td style="text-align: center">${statusBadge}</td>
-                                <td class="text-center">
-                                    <div class="btn-group" role="group">
-                                        <a href="/doctor/attend/edit/${appointment.id}" class="btn btn-primary btn-sm" style="background: #F4D03F !important;">
-                                            <i class="fa-solid fa-eye"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
+
+                        const row = [
+                            String(index + 1),
+                            `${appointment.patient.names} ${appointment.patient.surnames}`,
+                            `${appointment.doctor.specialization.name}`,
+                            `${appointment.date}`,
+                            `${appointment.time}`,
+                            `${statusBadge}`,
+                            `<div class="btn-group" role="group">
+                                <a href="/doctor/attend/edit/${appointment.id}" class="btn btn-primary btn-sm" style="background: #F4D03F !important;">
+                                    <i class=\"fa-solid fa-eye\"></i>
+                                </a>
+                            </div>`
+                        ];
+                        table.row.add(row);
                     });
-                } else {
-                    tbody = '<tr><td colspan="7" class="text-center">No hay citas en el rango seleccionado</td></tr>';
                 }
-                
-                $('#tabla_citas_body').html(tbody);
-                
-                // Re-inicializar DataTables
-                table = $('#especialidades').DataTable({
-                    responsive: true,
-                    autoWidth:false,
-                    "language": {
-                        "lengthMenu": "Mostrar "+
-                                        `<select class="custom-select custom-select-sm w-50 form-select form-select-sm mb-2">
-                                            <option value="5">5</option>
-                                            <option value="10">10</option>
-                                            <option value="15">15</option>
-                                            <option value="20">20</option>
-                                        </select>`,
-                        "zeroRecords": "No se encontraron citas",
-                        "info": "Mostrando la página _PAGE_ de _PAGES_ de _TOTAL_ citas",
-                        "infoEmpty": "No hay registros disponibles",
-                        "infoFiltered": "(filtrado de _MAX_ registros totales)",
-                        "search": "Buscar:",
-                        "emptyTable": "No hay citas disponibles",
-                        "paginate":{
-                            "next":">",
-                            "previous":"<"
-                        }
-                    }
-                });
+
+                table.draw();
             }
         },
         error: function(xhr) {

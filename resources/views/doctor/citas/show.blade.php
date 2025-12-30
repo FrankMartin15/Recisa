@@ -12,6 +12,8 @@
             <!-- Card único que contiene Especialidad + Detalles y Estado -->
             <div class="card mb-3 mb-lg-0 flex-fill">
                 <div class="card-body">
+                    <form action="{{ url('/doctor/attend/edit/' . $appointment->id) }}" method="post" class="w-100">
+                        @csrf
                     <!-- Especialidad -->
                     <div class="text-center mb-2">
                         <p class="text-primary fw-bold mb-2">Especialidad</p>
@@ -29,7 +31,7 @@
                                     <ul class="list-group list-group-flush rounded-3">
                                         <li class="list-group-item d-flex justify-content-between align-items-center p-3">
                                             <i class="fa-regular fa-calendar-check text-success" aria-hidden="true"></i>
-                                            <p class="mb-0">{{$appointment->date}}</p>
+                                            <input type="date" class="form-control form-control-sm text-end" name="date" value="{{ old('date', $appointment->date) }}">
                                         </li>
                                     </ul>
                                 </div>
@@ -41,7 +43,7 @@
                                     <ul class="list-group list-group-flush rounded-3">
                                         <li class="list-group-item d-flex justify-content-between align-items-center p-3">
                                             <i class="fa-regular fa-clock text-success" aria-hidden="true"></i>
-                                            <p class="mb-0">{{$appointment->time}}</p>
+                                            <input type="time" class="form-control form-control-sm text-end" name="time" step="60" value="{{ old('time', (isset($appointment->time) && strlen($appointment->time) >= 5) ? substr($appointment->time,0,5) : $appointment->time) }}">
                                         </li>
                                     </ul>
                                 </div>
@@ -63,8 +65,6 @@
                         @endif
                     </div>
                     <div class="d-flex justify-content-center mb-2">
-                        <form action="{{ url('/doctor/attend/edit/' . $appointment->id) }}" method="post" class="w-100">
-                            @csrf
                             <div class="row">
                                 <div class="input-group mb-3">
                                     <span class="input-group-text" id="basic-addon1"><i class="fa-solid fa-stethoscope"></i></span>
@@ -88,8 +88,8 @@
                                     </button>
                                 </div>
                             </div>
-                        </form>
                     </div>
+                    </form>
                 </div>
             </div>
         </div>

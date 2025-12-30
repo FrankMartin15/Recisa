@@ -93,10 +93,21 @@ class DoctorController extends Controller
         return view('doctor.citas.show', compact('appointment','clinical_histories', 'age'));
     }
     public function update(Request $request,$id){
+        // Normalizar hora: aceptar "HH:MM" o "HH:MM:SS" y convertir a "HH:MM"
+        if ($request->has('time')) {
+            $rawTime = (string) $request->input('time');
+            if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $rawTime)) {
+                $request->merge(['time' => substr($rawTime, 0, 5)]);
+            }
+        }
         $validator = Validator::make($request->all(), [
+            'date' => ['required','date_format:Y-m-d'],
+            'time' => ['required','date_format:H:i'],
             'status' => 'required|in:0,1,2',
             'description' => 'nullable',
         ],[], [
+            'date' => 'fecha',
+            'time' => 'hora',
             'status' => 'estado' 
         ]);
         $validator->sometimes('description', 'required', function ($input) {
@@ -107,11 +118,13 @@ class DoctorController extends Controller
         }
         // Encuentra la cita y actualiza los datos
         $appointment = Appointment::findOrFail($id);
+        $appointment->date = $request->input('date');
+        $appointment->time = $request->input('time');
         $appointment->status = $request->input('status');
         $appointment->description = $request->input('description');
         $appointment->save();
 
-        return redirect()->back()->with('success', 'Estado de la cita actualizado correctamente');
+        return redirect()->back()->with('success', 'Cita actualizada correctamente');
     }
 
     public function syncOfflineAttendance(Request $request)

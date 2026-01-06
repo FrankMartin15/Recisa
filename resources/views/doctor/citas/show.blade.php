@@ -1,4 +1,4 @@
-@extends('Layouts.app')
+@extends('layouts.app')
 @section('title', 'Atención')
 @push('css')
     <!--Alertas-->

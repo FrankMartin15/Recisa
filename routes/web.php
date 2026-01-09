@@ -146,6 +146,7 @@ Route::group(['middleware' => 'admin_or_secretary_or_doctor'], function () {
 
     // Citas
     Route::get('/recisa/appoitnment/list', [AppointmentController::class, 'list']);
+    Route::get('/recisa/appointments/reserved-hours/{quota_id}/{date}', [AppointmentController::class, 'getReservedHours']); // AJAX para obtener horas reservadas por especialidad
     Route::get('/recisa/appointments/list/json', [AppointmentController::class, 'listJson']); // API JSON para IndexedDB
     Route::get('/recisa/appoitnment/add', [AppointmentController::class, 'add']);
     Route::post('/recisa/appoitnment/add', [AppointmentController::class, 'insert']);

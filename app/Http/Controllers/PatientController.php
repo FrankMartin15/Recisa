@@ -182,7 +182,7 @@ class PatientController extends Controller
         // Validaciones
         request()->validate([
             'dni' => 'required|regex:/^[0-9]{8}$/|unique:patients,dni,' . $patient->id,
-            'phone' => 'required|regex:/^[0-9]{9}$/|unique:patients,phone,' . $patient->id,
+            'phone' => 'required|regex:/^[0-9]{9}$/',
             'date' => 'nullable|date',
         ]);
 

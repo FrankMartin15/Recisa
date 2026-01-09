@@ -121,6 +121,35 @@ class AppointmentController extends Controller
             ->header('Content-Type', 'application/pdf');
     }
 
+    public function getReservedHours($quotaId, $date)
+    {
+        try {
+            // Validar que la quota existe
+            $exists = UserSpecialization::where('id', $quotaId)->exists();
+            if (!$exists) {
+                return response()->json(['success' => false, 'message' => 'Especialidad no encontrada.'], 404);
+            }
+
+            // Obtener citas activas (status 0) para esa especialidad y fecha
+            $appointments = Appointment::where('id_quota', $quotaId)
+                ->where('date', $date)
+                ->where('status', 0)
+                ->get(['time']);
+
+            $hours = $appointments->pluck('time')->map(function($time) {
+                return substr($time, 0, 5); // Retornar formato HH:MM
+            });
+
+            return response()->json([
+                'success' => true,
+                'hours' => $hours
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching reserved hours: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error interno.'], 500);
+        }
+    }
+
     public function listJson(){
         $user = Auth::user();
 
@@ -290,79 +319,92 @@ class AppointmentController extends Controller
         }
 
         // --- LÓGICA NORMAL (ONLINE) ---
-        // Usamos validación manual aquí también para reemplazar StoreApointment
-        $request->validate([
-            'id_quota' => [
-                'required',
-                'integer',
-                'exists:user_specialization,id',
-                function ($attribute, $value, $fail) use ($request) {
-                    $appointment = Appointment::where('id_quota', $value)
-                        ->where('date', $request->date)
-                        ->where('time', $request->time)
-                        ->first();
-                    if ($appointment) {
-                        $fail('Ya existe una cita para este horario.');
-                    }
-                },
-            ],
-            'id_patient' => 'required|integer|exists:patients,id',
-            'date' => [
-                'required',
-                'date',
-                function ($attribute, $value, $fail) {
-                    try {
-                        if (Carbon::parse($value)->isWeekend()) {
-                            $fail('Solo se permite seleccionar fechas de lunes a viernes.');
-                        }
-                    } catch (\Exception $e) {
-                        $fail('La fecha ingresada no es válida.');
-                    }
-                },
-            ],
-            'time' => 'required|date_format:H:i',
-        ]);
-
+        // Usamos Validator facade para manejar excepciones manualmente dentro del try-catch
         try {
             DB::beginTransaction();
-            
-            // Validar cupos disponibles antes de crear la cita
+
+            $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+                'id_quota' => [
+                    'required',
+                    'integer',
+                    'exists:user_specialization,id',
+                    function ($attribute, $value, $fail) use ($request) {
+                        // Verificación estricta de cita duplicada por especialidad
+                        // Solo bloqueamos si la cita está ACTIVA (status = 0)
+                        $exists = Appointment::where('id_quota', $value)
+                            ->where('date', $request->date)
+                            ->where('time', $request->time)
+                            ->where('status', 0) // Ignorar citas canceladas
+                            ->exists();
+                            
+                        if ($exists) {
+                            $fail('Ya existe una cita reservada para este horario en esta especialidad.');
+                        }
+                    },
+                ],
+                'id_patient' => 'required|integer|exists:patients,id',
+                'date' => [
+                    'required',
+                    'date',
+                    function ($attribute, $value, $fail) {
+                        try {
+                            if (Carbon::parse($value)->isWeekend()) {
+                                $fail('Solo se permite seleccionar fechas de lunes a viernes.');
+                            }
+                        } catch (\Exception $e) {
+                            $fail('La fecha ingresada no es válida.');
+                        }
+                    },
+                ],
+                'time' => 'required', // Flexibilidad en formato, validado por la unicidad
+            ]);
+
+            if ($validator->fails()) {
+                DB::rollBack();
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $validator->errors()->first(), // Devolver el primer error como mensaje principal
+                        'errors' => $validator->errors()
+                    ], 422);
+                }
+                return redirect()->back()->withErrors($validator)->withInput();
+            }
+
+            // Validar cupos disponibles antes de crear la cita (Contador diario)
             $userSpecialization = UserSpecialization::findOrFail($request->id_quota);
+            
+            // Contar citas activas hoy para esta especialidad
             $citasHoy = Appointment::where('id_quota', $request->id_quota)
                 ->where('date', $request->date)
+                ->where('status', 0) // Importante: contar solo activas
                 ->count();
+                
             $cuposDisponibles = $userSpecialization->cupo_doctor - $citasHoy;
             
             if ($cuposDisponibles <= 0) {
                 DB::rollBack();
+                $msg = 'No hay cupos disponibles. Cupos totales: ' . $userSpecialization->cupo_doctor . ', Usados: ' . $citasHoy;
                 
-                // Si es AJAX, devolver error JSON
                 if ($request->expectsJson() || $request->ajax()) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'No hay cupos disponibles para esta especialidad en esta fecha.'
+                        'message' => $msg
                     ], 422);
                 }
-                
-                // Si es formulario normal, redirect con sesión
-                return redirect()->back()
-                    ->with('no_cupos', 'No hay cupos disponibles para esta especialidad en esta fecha.')
-                    ->withInput();
+                return redirect()->back()->with('no_cupos', $msg)->withInput();
             }
             
-            $appointment=new Appointment();
+            $appointment = new Appointment();
             $appointment->fill([
-                 'id_quota'=>$request->id_quota,
-                 'id_patient'=>$request->id_patient,
-                 'date'=>$request->date,
-                 'time'=>$request->time,
-                 'description'=> $request->description ?? null, // Si tienes campo descripción
-                 'status'=>0
+                 'id_quota' => $request->id_quota,
+                 'id_patient' => $request->id_patient,
+                 'date' => $request->date,
+                 'time' => $request->time,
+                 'description' => $request->description ?? null,
+                 'status' => 0
             ]);
             $appointment->save();
-
-            // No decrementamos cupos aquí porque no reflejan disponibilidad real
-            // Los cupos se calculan dinámicamente: cupo_doctor - citas_del_dia
 
             DB::commit();
 
@@ -373,26 +415,17 @@ class AppointmentController extends Controller
                     'appointment_id' => $appointment->id
                 ]);
             }
-            // El redirect original solo para envíos de formulario no-AJAX (si los hubiera)
             return redirect('recisa/appointments/list')->with('success','Cita registrada correctamente'); 
 
-        } catch (ValidationException $e) { // Errores de validación específicos
+        } catch (\Exception $e) {
             DB::rollBack();
-            if ($request->expectsJson() || $request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error de validación.',
-                    'errors' => $e->errors()
-                ], 422);
-            }
-            return redirect()->back()->withErrors($e->errors())->withInput();
-        } catch (Exception $e) {
-            DB::rollBack();
+            Log::error('❌ Error al registrar cita:', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false, 
-                    'message' => 'Error al registrar la cita: ' . $e->getMessage()
-                ], 500); // Error genérico del servidor
+                    'message' => 'Error del servidor: ' . $e->getMessage()
+                ], 500);
             }
             return redirect()->back()->with('error','Error al registrar la cita: ' . $e->getMessage())->withInput();
         }

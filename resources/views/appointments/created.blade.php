@@ -135,38 +135,45 @@
                                         <i class="fa-solid fa-user-doctor text-primary"></i>
                                     </label>
                                     <select name="id_quota" id="id_quota" data-style="btn-secondary" data-live-search="true" data-size="3" class="form-control selectpicker" title="Seleccione el médico y especialidad" required {{ $isDoctorUser ? 'disabled' : '' }}>
-                                        @foreach ($quotas as $quota)
                                         @php
-                                            $citasHoy = $appointmentCounts[$quota->id] ?? 0;
-                                            $cuposRestantes = $quota->cupo_doctor - $citasHoy;
+                                            $groupedQuotas = $quotas->groupBy('user.id');
                                         @endphp
-                                        @if($isDoctorUser)
-                                            {{-- Vista para doctores: información detallada --}}
-                                            <optgroup label="{{ $quota->user->surnames }}, {{ $quota->user->names }} -> Cupos: {{ $quota->cupo_doctor }} | Citas hoy: {{ $citasHoy }} | Disponibles: {{ $cuposRestantes }}">
-                                                <option value="{{ $quota->id }}" 
-                                                        data-doctor-id="{{ $quota->user->id }}" 
-                                                        data-cupos="{{ $quota->cupo_doctor }}"
-                                                        data-citas="{{ $citasHoy }}"
-                                                        data-specialization-id="{{ $quota->id_specialization }}"
-                                                        data-specialization-total="{{ $quota->specialization->quantity_voucher }}"
-                                                        data-tokens="{{ $quota->specialization->name }} {{ $quota->user->names }} {{ $quota->user->surnames }}"
-                                                        {{ (old('id_quota') == $quota->id || ($isDoctorUser && $doctorQuotaId == $quota->id)) ? 'selected' : '' }} 
-                                                        {{ $cuposRestantes <= 0 ? 'disabled' : '' }}>
-                                                    {{ $quota->specialization->name }}
-                                                </option>
+                                        @foreach ($groupedQuotas as $doctorId => $doctorQuotas)
+                                            @php
+                                                $firstQuota = $doctorQuotas->first();
+                                                $doctorName = $firstQuota->user->surnames . ', ' . $firstQuota->user->names;
+                                            @endphp
+                                            <!-- Agrupamos por Doctor para evitar duplicidad de nombres en la lista -->
+                                            <optgroup label="{{ $doctorName }}">
+                                                @foreach ($doctorQuotas as $quota)
+                                                    @php
+                                                        $citasHoy = $appointmentCounts[$quota->id] ?? 0;
+                                                        $cuposRestantes = $quota->cupo_doctor - $citasHoy;
+                                                        
+                                                        // Construir texto de información para subtext
+                                                        if($isDoctorUser) {
+                                                            $infoText = "Cupos: {$quota->cupo_doctor} | Hoy: {$citasHoy} | Disp: {$cuposRestantes}";
+                                                        } else {
+                                                            $infoText = "Disponibles: {$cuposRestantes} de {$quota->cupo_doctor}";
+                                                        }
+                                                        
+                                                        $isDisabled = ($isDoctorUser && $cuposRestantes <= 0) || (!$isDoctorUser && $quota->cupo_doctor == 0);
+                                                        $isSelected = (old('id_quota') == $quota->id || ($isDoctorUser && $doctorQuotaId == $quota->id));
+                                                    @endphp
+                                                    <option value="{{ $quota->id }}" 
+                                                            data-doctor-id="{{ $quota->user->id }}" 
+                                                            data-cupos="{{ $quota->cupo_doctor }}"
+                                                            data-citas="{{ $citasHoy }}"
+                                                            data-specialization-id="{{ $quota->id_specialization }}"
+                                                            data-specialization-total="{{ $quota->specialization->quantity_voucher }}"
+                                                            data-tokens="{{ $quota->specialization->name }} {{ $quota->user->names }} {{ $quota->user->surnames }}"
+                                                            data-subtext="{{ $infoText }}"
+                                                            {{ $isSelected ? 'selected' : '' }} 
+                                                            {{ $isDisabled ? 'disabled' : '' }}>
+                                                        {{ $quota->specialization->name }}
+                                                    </option>
+                                                @endforeach
                                             </optgroup>
-                                        @else
-                                            {{-- Vista para otros roles: información simple --}}
-                                            <optgroup label="{{ $quota->user->surnames }}, {{ $quota->user->names }} -> cupos: {{ $quota->cupo_doctor }}">
-                                                <option value="{{ $quota->id }}" 
-                                                        data-doctor-id="{{ $quota->user->id }}"
-                                                        data-tokens="{{ $quota->specialization->name }} {{ $quota->user->names }} {{ $quota->user->surnames }}" 
-                                                        {{ old('id_quota') == $quota->id ? 'selected' : '' }} 
-                                                        {{ $quota->cupo_doctor == 0 ? 'disabled' : '' }}>
-                                                    {{ $quota->specialization->name }}
-                                                </option>
-                                            </optgroup>
-                                        @endif
                                         @endforeach
                                     </select>
                                     @if($isDoctorUser)
@@ -569,102 +576,144 @@ $(document).ready(function() {
         console.log('✅ Selectpickers restaurados correctamente');
     }
     
-    // ⭐ FUNCIÓN MEJORADA PARA REGENERAR HORAS
-    // Horas reservadas (global dentro de este $(document).ready)
-    let reservedHours = @json($hour->pluck('time')->all() ?? []).map(time => time.slice(0, 5));
+    // ⭐ FUNCIÓN MEJORADA PARA REGENERAR HORAS CON AJAX
+    // Horas reservadas ahora se llena dinámicamente vía AJAX
+    let reservedHours = [];
+    
+    // Función para obtener horas reservadas
+    function fetchReservedHours() {
+        const quotaId = $('#id_quota').val();
+        const date = $('#date').val();
+        
+        if (!quotaId || !date) {
+            console.log('⚠️ Faltan datos para consultar horas (quota o fecha)');
+            reservedHours = [];
+            regenerarHorasDisponibles();
+            return;
+        }
+        
+        console.log(`📡 Consultando horas reservadas para Quota: ${quotaId}, Fecha: ${date}`);
+        
+        // Mostrar indicador de carga en el select de horas (opcional, pero buena UX)
+        // Por ahora mantenemos la UI simple
+        
+        $.ajax({
+            url: `/recisa/appointments/reserved-hours/${quotaId}/${date}`,
+            method: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    reservedHours = response.hours || [];
+                    console.log('✅ Horas reservadas recibidas:', reservedHours);
+                    regenerarHorasDisponibles();
+                } else {
+                    console.error('❌ Error lógico al obtener horas:', response.message);
+                    reservedHours = []; // Asumir todo libre por defecto o manejar error
+                    regenerarHorasDisponibles();
+                }
+            },
+            error: function(xhr) {
+                console.error('❌ Error de red al obtener horas:', xhr);
+                // En caso de error, no podemos bloquear todo el sistema.
+                // Podríamos limpiar reservedHours para permitir probar,
+                // o mantener las anteriores si es un fallo transitorio.
+                // Por seguridad, limpiamos:
+                reservedHours = [];
+                regenerarHorasDisponibles();
+            }
+        });
+    }
+
+    // Escuchar cambios en Doctor/Especialidad y Fecha (incluye evento propio de selectpicker)
+    $('#id_quota, #date').on('change', function() {
+        fetchReservedHours();
+    });
+    $('#id_quota').on('changed.bs.select', function() {
+        fetchReservedHours();
+    });
 
     function regenerarHorasDisponibles() {
         console.log('🕐 Regenerando horas disponibles...');
         
         var selectTime = $('#time');
+        
+        // Destruir el selectpicker antes de modificar el HTML
+        try {
+            selectTime.selectpicker('destroy');
+        } catch(e) {
+            // Ignorar si no está inicializado
+        }
+        
         // Preservar el valor seleccionado antes de regenerar
         const prevVal = selectTime.val();
         var horasManana = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00'];
         var horasTarde = ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
         
-        console.log('⏰ Horas reservadas:', reservedHours);
+        console.log('⏰ Horas reservadas (actuales):', reservedHours);
         
-        // Siempre mostrar ambos turnos; no filtrar por fecha/hora actual
+        // Construir el HTML completo primero para evitar duplicados en el DOM
+        let htmlContent = '';
+        let totalOptions = 0;
         
-        // Limpiar completamente el select
-        selectTime.empty();
-        
-        function agregarHoras(horas, turno) {
-            let optgroup = $(`<optgroup label="${turno}">`);
-            let hasSlots = false;
+        // Función auxiliar para construir grupos
+        function buildGroupContent(horas, label) {
+            let groupHtml = `<optgroup label="${label}">`;
+            let hasOptions = false;
+            
             horas.forEach(hora => {
-                // Filtrar horas reservadas
                 if (reservedHours.includes(hora)) {
-                    console.log('⏰ Hora descartada (reservada):', hora);
                     return;
                 }
-                
-                console.log('✅ Hora agregada:', hora);
-                optgroup.append(`<option value="${hora}">${hora}</option>`);
-                hasSlots = true;
+                groupHtml += `<option value="${hora}">${hora}</option>`;
+                hasOptions = true;
+                totalOptions++;
             });
-            // Siempre agregar el optgroup para mostrar Turno Mañana/Tarde, aunque esté vacío
-            selectTime.append(optgroup);
+            
+            groupHtml += `</optgroup>`;
+            return groupHtml;
         }
         
-        agregarHoras(horasManana, 'Turno Mañana');
-        agregarHoras(horasTarde, 'Turno Tarde');
+        htmlContent += buildGroupContent(horasManana, 'Turno Mañana');
+        htmlContent += buildGroupContent(horasTarde, 'Turno Tarde');
+        
+        // Si no hay opciones disponibles, mostrar mensaje
+        if (totalOptions === 0) {
+            htmlContent = '<option value="" disabled>No hay horas disponibles</option>';
+        }
+        
+        // Reemplazar el contenido del select
+        selectTime.html(htmlContent);
         
         // Si la hora previamente seleccionada sigue disponible, mantenerla
         if (prevVal && selectTime.find(`option[value="${prevVal}"]`).length > 0) {
             selectTime.val(prevVal);
+        } else {
+            selectTime.val(''); // Limpiar selección si no existe
         }
-        // Refrescar el selectpicker y renderizar
-        selectTime.selectpicker('refresh');
-        selectTime.selectpicker('render');
         
-        console.log('✅ Horas regeneradas, total opciones:', $('#time option').length);
+        // Reinicializar selectpicker con las nuevas opciones
+        selectTime.selectpicker({
+            title: 'Seleccione una hora',
+            style: 'btn-secondary'
+        });
         
-        // Verificar que el selectpicker funcione correctamente
-        setTimeout(() => {
-            if ($('#time option').length === 0) {
-                console.log('⚠️ No hay horas disponibles, regenerando...');
-                // Si no hay opciones, agregar al menos una opción temporal
-                selectTime.append('<option value="">No hay horas disponibles</option>');
-                selectTime.selectpicker('refresh');
-            }
-        }, 100);
+        console.log('✅ Horas regeneradas, total opciones:', totalOptions);
     }
     
-    // Inicializar selectpickers
-    $('.selectpicker').selectpicker();
+    // Inicializar selectpickers (pacientes y doctores primero, tiempo después)
+    $('#id_quota, #id_patient').selectpicker();
 
-    // Asegurar que al seleccionar una hora se refleje inmediatamente en el botón
-    $('#time').on('changed.bs.select', function() {
-        // Marcar que el formulario está en uso para evitar reseteos
+    // Asegurar que al seleccionar una hora se refleje inmediatamente
+    $(document).on('changed.bs.select', '#time', function() {
         formHasData = true;
         resetEnabled = false;
-
-        const $time = $('#time');
-        const val = $time.val();
-
-        // Forzar selección única: limpiar cualquier selección previa
-        $time.find('option').prop('selected', false);
-        if (val) {
-            $time.find(`option[value="${val}"]`).prop('selected', true);
-        }
-
-        // Actualizar estado del plugin y el texto del botón
-        $time.selectpicker('val', val);
-        $time.selectpicker('refresh');
-        $time.selectpicker('render');
-
+        const val = $(this).val();
         console.log('🕑 Hora seleccionada:', val);
     });
 
-    // Redundancia defensiva: asegurar selección única también en cambio nativo
-    $('#time').on('change', function() {
-        const $time = $('#time');
-        const val = $time.val();
-        $time.find('option').prop('selected', false);
-        if (val) {
-            $time.find(`option[value="${val}"]`).prop('selected', true);
-        }
+    // Redundancia: también capturar cambio nativo
+    $(document).on('change', '#time', function() {
+        formHasData = true;
+        resetEnabled = false;
     });
     
     // FORZAR la fecha correcta (hoy) SIEMPRE al cargar la página
@@ -697,7 +746,13 @@ $(document).ready(function() {
 
     // Configurar horas disponibles INICIALMENTE (después de asegurar la fecha)
     setTimeout(function() {
-        regenerarHorasDisponibles();
+        // En lugar de llamar a regenerarHorasDisponibles directamente,
+        // llamamos a fetchReservedHours si ya hay datos, o regenerar si no.
+        if($('#id_quota').val() && $('#date').val()) {
+            fetchReservedHours();
+        } else {
+            regenerarHorasDisponibles();
+        }
     }, 100);
 
     // ⭐ CONFIGURAR DATATABLES UNA SOLA VEZ
@@ -860,6 +915,9 @@ $(document).ready(function() {
                     } else if (xhr.responseJSON && xhr.responseJSON.errors) {
                         const errors = Object.values(xhr.responseJSON.errors).flat();
                         errorMessage = errors.join(' • ');
+                    } else if (xhr.responseText) {
+                        // Fallback para respuestas HTML (419/500) que no traen JSON
+                        errorMessage = $(xhr.responseText).text().trim().slice(0, 200) || errorMessage;
                     }
 
                     const Toast = Swal.mixin({

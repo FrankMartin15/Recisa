@@ -25,7 +25,7 @@ class StorePatient extends FormRequest
             'dni'=>'required|digits:8|regex:/^[0-9]{8}$/|unique:patients,dni',
             'names'=>'required|string|regex:/^[\pL\s]+$/u|max:25',
             'surnames'=>'required|string|regex:/^[\pL\s]+$/u|max:25',
-            'phone'=>'required|regex:/^[0-9]{9}$/|unique:patients,phone',
+            'phone'=>'required|regex:/^[0-9]{9}$/',
             'date' => 'required|date',
             'history_number' => 'required|digits:6|unique:patients,history_number'
         ];

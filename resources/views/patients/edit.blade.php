@@ -41,22 +41,22 @@
                         <div class="row g-3">
                             <div class="col-md-2">
                                 <label for="dni" class="form-label">DNI:</label>
-                                <input readonly class="form-control" type="text" name="dni" id="dni"
+                                <input class="form-control" type="text" name="dni" id="dni"
                                     value="{{ old('dni', $patient->dni) }}">
                             </div>
                             <div class="col-md-3">
                                 <label for="names" class="form-label">Nombres:</label>
-                                <input readonly class="form-control" type="text" name="names" id="names"
+                                <input class="form-control" type="text" name="names" id="names"
                                     value="{{ old('names', $patient->names) }}">
                             </div>
                             <div class="col-md-4">
                                 <label for="surnames" class="form-label">Apellido:</label>
-                                <input readonly class="form-control" type="text" name="surnames" id="surnames"
+                                <input class="form-control" type="text" name="surnames" id="surnames"
                                     value="{{ old('surnames', $patient->surnames) }}">
                             </div>
                             <div class="col-md-3">
-                                <label for="phone" class="form-label">Número Historial:</label>
-                                <input readonly class="form-control" maxlength="6" minlength="6" type="text"
+                                <label for="history_number" class="form-label">Número Historial:</label>
+                                <input class="form-control" maxlength="6" minlength="6" type="text"
                                     inputmode="numeric" pattern="\d{6}" autocomplete="off"
                                     name="history_number" id="history_number"
                                     value="{{ old('history_number', $patient->history_number) }}">

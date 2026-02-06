@@ -182,12 +182,19 @@ class PatientController extends Controller
         // Validaciones
         request()->validate([
             'dni' => 'required|regex:/^[0-9]{8}$/|unique:patients,dni,' . $patient->id,
+            'names' => 'required|string|max:255',
+            'surnames' => 'required|string|max:255',
             'phone' => 'required|regex:/^[0-9]{9}$/',
+            'history_number' => 'required|digits:6',
             'date' => 'nullable|date',
         ]);
 
-        // Actualizar campos del paciente
+        // Actualizar todos los campos editables
+        $patient->dni = $request->dni;
+        $patient->names = $request->names;
+        $patient->surnames = $request->surnames;
         $patient->phone = $request->phone;
+        $patient->history_number = $request->history_number;
         // Guardar fecha de nacimiento en la columna 'age'
         $patient->age = $request->filled('date') ? $request->date : null;
 

@@ -244,15 +244,6 @@ class AppointmentController extends Controller
                     'date' => [
                         'required',
                         'date',
-                        function ($attribute, $value, $fail) {
-                            try {
-                                if (Carbon::parse($value)->isWeekend()) {
-                                    $fail('Solo se permite seleccionar fechas de lunes a viernes.');
-                                }
-                            } catch (\Exception $e) {
-                                $fail('La fecha ingresada no es válida.');
-                            }
-                        },
                     ],
                     'time' => 'required', // No validamos formato estricto ni duplicados aquí
                 ]);
@@ -346,15 +337,6 @@ class AppointmentController extends Controller
                 'date' => [
                     'required',
                     'date',
-                    function ($attribute, $value, $fail) {
-                        try {
-                            if (Carbon::parse($value)->isWeekend()) {
-                                $fail('Solo se permite seleccionar fechas de lunes a viernes.');
-                            }
-                        } catch (\Exception $e) {
-                            $fail('La fecha ingresada no es válida.');
-                        }
-                    },
                 ],
                 'time' => 'required', // Flexibilidad en formato, validado por la unicidad
             ]);

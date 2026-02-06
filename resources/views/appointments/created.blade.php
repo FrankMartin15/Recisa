@@ -370,70 +370,28 @@
 
 <script>
 $(document).ready(function() {
-    // ⭐ CAMPO FECHA: SIEMPRE EDITABLE, PERO SOLO LUNES-VIERNES
-    function isWeekendDateString(dateStr) {
-        if (!dateStr) return false;
-        const d = new Date(dateStr + 'T00:00:00');
-        const day = d.getDay();
-        return day === 0 || day === 6;
-    }
 
-    function nextWeekdayFrom(dateStrOrToday) {
-        const base = dateStrOrToday
-            ? new Date(dateStrOrToday + 'T00:00:00')
-            : new Date(new Date().toISOString().split('T')[0] + 'T00:00:00');
 
-        while (base.getDay() === 0 || base.getDay() === 6) {
-            base.setDate(base.getDate() + 1);
-        }
 
-        return base.toISOString().split('T')[0];
-    }
 
-    function ensureWeekdaySelected(showAlert) {
-        const dateField = $('#date');
-        const current = dateField.val();
-
-        // Si está vacío, setear a próximo día hábil
-        if (!current) {
-            dateField.val(nextWeekdayFrom(null));
-            return;
-        }
-
-        if (isWeekendDateString(current)) {
-            const fixed = nextWeekdayFrom(current);
-            dateField.val(fixed);
-
-            if (showAlert) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Fecha no permitida',
-                    text: 'Solo se permite seleccionar fechas de lunes a viernes. Se ajustó automáticamente al próximo día hábil.',
-                });
-            }
-        }
-    }
-
+    // Campo fecha editable para todos los días, sin restricción de sábados ni domingos
     function actualizarCampoFechaSegunConexion() {
         const isOnline = navigator.onLine;
         const dateField = $('#date');
-
-        // Siempre editable; solo marcamos visualmente si está offline
         dateField.prop('readonly', false);
         if (!isOnline) {
             dateField.addClass('border-warning');
-            dateField.attr('title', 'Modo offline: selección de fecha disponible (solo lunes a viernes)');
+            dateField.attr('title', 'Modo offline: selección de fecha disponible');
         } else {
             dateField.removeClass('border-warning');
             dateField.removeAttr('title');
         }
     }
 
-    // ⭐ MOSTRAR/OCULTAR AVISO DE CUPOS APROXIMADOS EN MODO OFFLINE
+    // Mostrar/Ocultar aviso de cupos aproximados en modo offline
     function actualizarAvisoCuposOffline() {
         const isOffline = !navigator.onLine;
         const notice = $('#cupos-offline-notice');
-
         if (isOffline) {
             notice.show();
         } else {
@@ -444,24 +402,20 @@ $(document).ready(function() {
     // Ejecutar al cargar la página
     actualizarCampoFechaSegunConexion();
     actualizarAvisoCuposOffline();
-    ensureWeekdaySelected(false);
 
-    // Al cambiar la fecha, forzar lunes-viernes SIN afectar las horas
+    // Al cambiar la fecha, no hay restricción
     $('#date').on('change', function() {
-        ensureWeekdaySelected(true);
-        // No modificar el select de horas al cambiar la fecha
+        // No hay restricción, no modificar el select de horas
     });
 
     // Listeners para cambios de conexión
     window.addEventListener('online', () => {
         actualizarCampoFechaSegunConexion();
         actualizarAvisoCuposOffline();
-        ensureWeekdaySelected(false);
     });
     window.addEventListener('offline', () => {
         actualizarCampoFechaSegunConexion();
         actualizarAvisoCuposOffline();
-        ensureWeekdaySelected(false);
     });
 
     // ⭐ GUARDAR DATOS ORIGINALES
@@ -831,8 +785,7 @@ $(document).ready(function() {
         resetEnabled = false;
         console.log('📝 Formulario en proceso de envío - Reseteo bloqueado');
 
-        // Asegurar que la fecha enviada sea día hábil
-        ensureWeekdaySelected(true);
+        // Ya no se restringe la fecha, se permite cualquier día
         
         const submitBtn = $('#submit-btn');
         const btnText = $('#btn-text');
